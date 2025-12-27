@@ -23,6 +23,8 @@
   const GENS_COUNT_KEY = 'SCT_GENS_COUNT_V1'; // stored in sora.chatgpt.com localStorage
   const UV_TASK_TO_DRAFT_KEY = 'SORA_UV_TASK_TO_DRAFT_V1'; // task_id -> source draft ID (draft remix redo)
   const UV_REDO_PROMPT_KEY = 'SORA_UV_REDO_PROMPT';
+  const COMPOSER_TEXTAREA_SELECTOR =
+    'textarea[placeholder="Describe your video..."], textarea[placeholder^="Describe changes"], textarea[placeholder*="Describe changes"]';
 
   const isStoryboardRoute = () => {
     try {
@@ -145,14 +147,78 @@
     }
   };
 
+  const isInSidebar = (el) => {
+    try {
+      if (!el || !el.closest) return false;
+      return !!el.closest('[class*="w-[var(--sidebar-width)]"]');
+    } catch {
+      return false;
+    }
+  };
+
+  const getComposerRoots = () => {
+    try {
+      const roots = new Set();
+      const textareas = Array.from(document.querySelectorAll(COMPOSER_TEXTAREA_SELECTOR));
+      for (const textarea of textareas) {
+        let n = textarea;
+        for (let i = 0; i < 16 && n; i++, n = n.parentElement) {
+          if (n.querySelector && n.querySelector('.bg-token-bg-composer')) {
+            roots.add(n);
+            break;
+          }
+          if (n.querySelectorAll) {
+            const settingsButtons = Array.from(
+              n.querySelectorAll('button[aria-label="Settings"][aria-haspopup="menu"]')
+            );
+            if (settingsButtons.some((btn) => !isInSidebar(btn))) {
+              roots.add(n);
+              break;
+            }
+          }
+        }
+      }
+      return Array.from(roots);
+    } catch {
+      return [];
+    }
+  };
+
+  const isWithinComposer = (el, roots) => {
+    try {
+      if (!el || !roots || !roots.length) return false;
+      return roots.some((root) => root && root.contains && root.contains(el));
+    } catch {
+      return false;
+    }
+  };
+
+  const getComposerSettingsButtons = (roots) => {
+    try {
+      const list = [];
+      (roots || []).forEach((root) => {
+        if (!root || !root.querySelectorAll) return;
+        root.querySelectorAll('button[aria-label="Settings"][aria-haspopup="menu"]').forEach((btn) => {
+          if (!isInSidebar(btn)) list.push(btn);
+        });
+      });
+      return list;
+    } catch {
+      return [];
+    }
+  };
+
   const findSettingsTriggerButton = () => {
     try {
-      const buttons = getSettingsTriggerButtons();
-      if (!buttons.length) return null;
-      const expanded = buttons.find((btn) => btn.getAttribute('aria-expanded') === 'true');
+      const allButtons = getSettingsTriggerButtons();
+      if (!allButtons.length) return null;
+      const roots = getComposerRoots();
+      const buttons = roots.length ? getComposerSettingsButtons(roots) : allButtons;
+      const candidates = buttons.length ? buttons : allButtons;
+      const expanded = candidates.find((btn) => btn.getAttribute('aria-expanded') === 'true');
       if (expanded) return expanded;
-      const visible = buttons.find((btn) => isVisibleEl(btn));
-      return visible || buttons[0] || null;
+      const visible = candidates.find((btn) => isVisibleEl(btn));
+      return visible || candidates[0] || null;
     } catch {
       return null;
     }
@@ -465,7 +531,7 @@
   ];
 
   const GENS_COUNT_MIN = 1;
-  const GENS_COUNT_MAX = 20;
+  const GENS_COUNT_MAX = 10;
 
   function safeJsonParse(str) {
     try {
@@ -755,7 +821,7 @@
     label.dataset.sctGensLabel = '1';
     label.textContent = `Gens ${gensCount}`;
     label.style.display = 'inline-block';
-    label.style.minWidth = '6ch';
+    label.style.width = '6ch';
     label.style.textAlign = 'center';
     button.appendChild(label);
 
@@ -872,7 +938,18 @@
 
     const process = () => {
       try {
-        const triggers = getSettingsTriggerButtons();
+        const roots = getComposerRoots();
+        const controls = Array.from(document.querySelectorAll('[data-sct-gens-control="1"]'));
+        controls.forEach((control) => {
+          if (isInSidebar(control)) {
+            control.remove();
+            return;
+          }
+          if (roots.length && !isWithinComposer(control, roots)) control.remove();
+        });
+
+        if (!roots.length) return;
+        const triggers = getComposerSettingsButtons(roots);
         const targets = triggers.filter((btn) => isVisibleEl(btn));
         const candidates = targets.length ? targets : triggers;
         if (!candidates.length) return;
