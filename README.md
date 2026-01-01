@@ -14,7 +14,7 @@
 
 ![](/imagery/extension2.jpg)
 
-![](/imagery/extension5.jpg)
+![](/imagery/extension5.webp)
 
 ## Features:
 - **Post View Counts** - Shows unique view counts right on Sora Explore, profile grids, and post pages.
@@ -80,6 +80,7 @@ Contributions are accepted under the DCO (see [CONTRIBUTING.md](./CONTRIBUTING.m
 ![](/imagery/extension3.jpg)
 
 ![](/imagery/extension4.jpg)
+
 
 
 
