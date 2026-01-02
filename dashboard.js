@@ -22,30 +22,52 @@
     return SITE_ORIGIN + '/' + u;
   };
   const COLORS = [
-    '#7dc4ff','#ff8a7a','#ffd166','#95e06c','#c792ea','#64d3ff','#ffa7c4','#9fd3c7','#f6bd60','#84a59d','#f28482'
+    '#7dc4ff','#ff8a7a','#ffd166','#95e06c','#c792ea','#64d3ff','#ffa7c4','#9fd3c7','#f6bd60','#84a59d','#f28482',
+    '#ffe066','#b7ff5a','#6ff5c7','#54e6ff','#6aaeff','#b08bff','#ff66d4','#ff7aa2','#e2c08c'
   ];
+  let paletteOffset = 0;
+  let basePaletteOffset = 0;
   const THEME_STORAGE_KEY = 'SCT_DASHBOARD_THEME_V1';
+  const THEME_TOGGLE_SEEN_KEY = 'SCT_THEME_TOGGLE_SEEN_V1';
   const THEME_PRESETS = {
     red: { label: 'Red', accent: '#ff6b6b', accentStrong: '#ff9b93', accentRgb: '255,107,107' },
     orange: { label: 'Orange', accent: '#ff9f43', accentStrong: '#ffbf7a', accentRgb: '255,159,67' },
     gold: { label: 'Gold', accent: '#ffcf8f', accentStrong: '#ffe1b5', accentRgb: '255,207,143' },
+    lemon: { label: 'Lemon', accent: '#ffe066', accentStrong: '#ffe994', accentRgb: '255,224,102' },
+    lime: { label: 'Lime', accent: '#b7ff5a', accentStrong: '#cdff8c', accentRgb: '183,255,90' },
     green: { label: 'Green', accent: '#9eea6a', accentStrong: '#c1f28f', accentRgb: '158,234,106' },
+    mint: { label: 'Mint', accent: '#6ff5c7', accentStrong: '#9af8d8', accentRgb: '111,245,199' },
     teal: { label: 'Teal', accent: '#5fe0d7', accentStrong: '#8cf0e9', accentRgb: '95,224,215' },
+    cyan: { label: 'Cyan', accent: '#54e6ff', accentStrong: '#87eeff', accentRgb: '84,230,255' },
     blue: { label: 'Blue', accent: '#7dc4ff', accentStrong: '#9ad5ff', accentRgb: '125,196,255' },
+    sky: { label: 'Sky', accent: '#6aaeff', accentStrong: '#97c6ff', accentRgb: '106,174,255' },
     indigo: { label: 'Indigo', accent: '#9a7cff', accentStrong: '#b6a1ff', accentRgb: '154,124,255' },
+    violet: { label: 'Violet', accent: '#b08bff', accentStrong: '#c8aeff', accentRgb: '176,139,255' },
+    magenta: { label: 'Magenta', accent: '#ff66d4', accentStrong: '#ff94e1', accentRgb: '255,102,212' },
     pink: { label: 'Pink', accent: '#ff8fd3', accentStrong: '#ffb6e7', accentRgb: '255,143,211' },
+    rose: { label: 'Rose', accent: '#ff7aa2', accentStrong: '#ffa2be', accentRgb: '255,122,162' },
+    sand: { label: 'Sand', accent: '#e2c08c', accentStrong: '#ebd3ae', accentRgb: '226,192,140' },
     gray: { label: 'Gray', accent: '#c9d1d9', accentStrong: '#e4e9ef', accentRgb: '201,209,217' },
     darkRed: { label: 'Dark Red', accent: '#c44545', accentStrong: '#e07a7a', accentRgb: '196,69,69' },
     darkOrange: { label: 'Dark Orange', accent: '#c26a2a', accentStrong: '#e49857', accentRgb: '194,106,42' },
     darkGold: { label: 'Dark Gold', accent: '#c8a042', accentStrong: '#e0bc5e', accentRgb: '200,160,66' },
+    darkLime: { label: 'Dark Lime', accent: '#5aa83a', accentStrong: '#8cc275', accentRgb: '90,168,58' },
     darkGreen: { label: 'Dark Green', accent: '#39ff14', accentStrong: '#7bff5f', accentRgb: '57,255,20' },
+    darkMint: { label: 'Dark Mint', accent: '#1f8f6f', accentStrong: '#62b19a', accentRgb: '31,143,111' },
     darkTeal: { label: 'Dark Teal', accent: '#1f9c8a', accentStrong: '#45b9aa', accentRgb: '31,156,138' },
+    darkCyan: { label: 'Dark Cyan', accent: '#1a7f9b', accentStrong: '#5fa5b9', accentRgb: '26,127,155' },
+    darkCopper: { label: 'Dark Copper', accent: '#8b5a3b', accentStrong: '#ae8c76', accentRgb: '139,90,59' },
     darkBlue: { label: 'Dark Blue', accent: '#2f6fb3', accentStrong: '#5c8fca', accentRgb: '47,111,179' },
+    darkSky: { label: 'Dark Sky', accent: '#2b5c9c', accentStrong: '#6b8dba', accentRgb: '43,92,156' },
     darkIndigo: { label: 'Dark Indigo', accent: '#4d2f7a', accentStrong: '#6e4aa6', accentRgb: '77,47,122' },
+    darkViolet: { label: 'Dark Violet', accent: '#5c3a8f', accentStrong: '#8d75b1', accentRgb: '92,58,143' },
+    darkMagenta: { label: 'Dark Magenta', accent: '#9b3d86', accentStrong: '#b977aa', accentRgb: '155,61,134' },
     darkPink: { label: 'Dark Pink', accent: '#b64b8f', accentStrong: '#d476b4', accentRgb: '182,75,143' },
+    darkRose: { label: 'Dark Rose', accent: '#a3465d', accentStrong: '#bf7e8e', accentRgb: '163,70,93' },
+    darkSlate: { label: 'Dark Slate', accent: '#5b6b7a', accentStrong: '#8c97a2', accentRgb: '91,107,122' },
     darkGray: { label: 'Dark Gray', accent: '#8d949c', accentStrong: '#aeb5bd', accentRgb: '141,148,156' }
   };
-  const THEME_ALIASES = { amber: 'gold', rose: 'red', violet: 'indigo', grey: 'gray', deepPurple: 'indigo', darkPurple: 'darkPink' };
+  const THEME_ALIASES = { amber: 'gold', rose: 'red', violet: 'indigo', grey: 'gray', deepPurple: 'indigo', darkPurple: 'darkPink', yellow: 'lemon', limegreen: 'lime', aqua: 'cyan', turquoise: 'cyan', skyblue: 'sky', purple: 'violet', fuchsia: 'magenta', beige: 'sand', copper: 'darkCopper', slate: 'darkSlate' };
   const BASE_RGB = {
     bg: [10,15,20],
     'bg-deep': [7,11,16],
@@ -66,11 +88,11 @@
     chip: [18,26,36]
   };
   const BASE_TINT = {
-    bg: 0.06,
-    'bg-deep': 0.05,
-    'bg-alt': 0.06,
-    'bg-dark': 0.05,
-    'bg-ultra': 0.04,
+    bg: 0.12,
+    'bg-deep': 0.1,
+    'bg-alt': 0.12,
+    'bg-dark': 0.1,
+    'bg-ultra': 0.09,
     panel: 0.08,
     'panel-strong': 0.08,
     'panel-deep': 0.07,
@@ -81,16 +103,378 @@
     'panel-edge': 0.08,
     surface: 0.09,
     'surface-strong': 0.09,
-    'bg-subtle': 0.07,
+    'bg-subtle': 0.1,
     chip: 0.09
   };
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const SIDEBAR_WIDTH_KEY = 'SCT_DASHBOARD_SIDEBAR_WIDTH';
   const SIDEBAR_MIN_WIDTH = 260;
-  const SIDEBAR_MAX_WIDTH = 520;
+  const SIDEBAR_MAX_WIDTH = 620;
+  const USERS_INDEX_STORAGE_KEY = 'metricsUsersIndex';
+  const SESSION_CACHE_KEY = 'SCT_DASHBOARD_CACHE_V1';
+  const SESSION_CACHE_MAX_BYTES = 4 * 1024 * 1024;
+  const BOOT_CACHE_KEY = 'SCT_DASHBOARD_BOOT_CACHE_V1';
+  const BOOT_CACHE_MAX_BYTES = 350 * 1024;
+  const BEST_TIME_CACHE_KEY = 'SCT_DASHBOARD_BEST_TIME_V2';
+  const BEST_TIME_PREFS_KEY = 'SCT_DASHBOARD_BEST_TIME_PREFS_V1';
   let metrics = { users: {} };
+  let lastMetricsUpdatedAt = 0;
+  let usersIndex = null;
+  let isMetricsPartial = false;
+  let lastSessionCacheAt = 0;
+  let currentUserKey = null;
   const ESC_MAP = { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' };
   const esc = (s)=> String(s).replace(/[&<>"']/g, (c)=> ESC_MAP[c] || c);
+  const PERF_STORAGE_KEY = 'SCT_DASHBOARD_PERF';
+  const PERF_STORAGE_AUTO_KEY = 'SCT_DASHBOARD_PERF_AUTO';
+  const PERF_ENABLED = (function(){
+    try { return localStorage.getItem(PERF_STORAGE_KEY) === '1'; } catch { return false; }
+  })();
+  const PERF_AUTO_ENABLED = (function(){
+    try { return localStorage.getItem(PERF_STORAGE_AUTO_KEY) === '1'; } catch { return false; }
+  })();
+  const perfMarks = [];
+  const perfStart = (name)=>{
+    if (!PERF_ENABLED || typeof performance === 'undefined') return null;
+    return { name, t: performance.now() };
+  };
+  const perfEnd = (mark)=>{
+    if (!PERF_ENABLED || !mark || typeof performance === 'undefined') return;
+    const ms = performance.now() - mark.t;
+    perfMarks.push({ step: mark.name, ms: Math.round(ms * 10) / 10 });
+  };
+  const perfFlush = (label, log = true)=>{
+    if (!PERF_ENABLED) return;
+    if (log && perfMarks.length) {
+      console.groupCollapsed(`[Dashboard] Perf ${label}`);
+      console.table(perfMarks);
+      console.groupEnd();
+    }
+    perfMarks.length = 0;
+  };
+  const nextPaint = ()=> new Promise((resolve)=>{
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => resolve());
+    else setTimeout(resolve, 0);
+  });
+  const PRUNE_THROTTLE_MS = 5 * 60 * 1000;
+  const lastPruneAtByUser = new Map();
+
+  function buildUsersIndexFromMetrics(metrics){
+    const out = [];
+    for (const [key, user] of Object.entries(metrics?.users || {})){
+      const postCount = Object.keys(user?.posts || {}).length;
+      out.push({ key, handle: user?.handle || null, id: user?.id || null, postCount });
+    }
+    return out;
+  }
+
+  function normalizeUsersIndex(raw){
+    if (!Array.isArray(raw)) return null;
+    const out = [];
+    for (const entry of raw){
+      if (!entry || typeof entry !== 'object') continue;
+      const key = typeof entry.key === 'string' ? entry.key : null;
+      if (!key) continue;
+      const postCount = Number(entry.postCount);
+      out.push({
+        key,
+        handle: typeof entry.handle === 'string' ? entry.handle : null,
+        id: entry.id != null ? String(entry.id) : null,
+        postCount: Number.isFinite(postCount) ? postCount : 0
+      });
+    }
+    return out;
+  }
+
+  function findUserIndexEntry(userKey){
+    if (!userKey || !Array.isArray(usersIndex)) return null;
+    return usersIndex.find((entry)=> entry.key === userKey) || null;
+  }
+
+  function normalizeDashboardCache(cache){
+    if (!cache || typeof cache !== 'object') return null;
+    if (!cache.userKey || !cache.user || !cache.usersIndex) return null;
+    if (cache.userKey === TOP_TODAY_KEY) return null;
+    const index = normalizeUsersIndex(cache.usersIndex);
+    if (!index || !index.length) return null;
+    const bestTimeData = normalizeBestTimeData(cache?.bestTime?.data);
+    const bestTime = bestTimeData ? {
+      data: bestTimeData,
+      metricsUpdatedAt: Number(cache?.bestTime?.metricsUpdatedAt) || 0,
+      savedAt: Number(cache?.bestTime?.savedAt) || 0
+    } : null;
+    return {
+      userKey: cache.userKey,
+      user: cache.user,
+      usersIndex: index,
+      metricsUpdatedAt: Number(cache.metricsUpdatedAt) || 0,
+      bestTime
+    };
+  }
+
+  function loadSessionCache(){
+    try {
+      const raw = sessionStorage.getItem(SESSION_CACHE_KEY);
+      if (!raw) return null;
+      const cache = JSON.parse(raw);
+      return normalizeDashboardCache(cache);
+    } catch {
+      return null;
+    }
+  }
+
+  function loadBootCache(){
+    try {
+      const raw = localStorage.getItem(BOOT_CACHE_KEY);
+      if (!raw) return null;
+      const cache = JSON.parse(raw);
+      return normalizeDashboardCache(cache);
+    } catch {
+      return null;
+    }
+  }
+
+  function loadInstantCache(){
+    return loadSessionCache() || loadBootCache();
+  }
+
+  function buildBootCache(cache){
+    if (!cache || typeof cache !== 'object') return null;
+    const user = cache.user;
+    if (!user || typeof user !== 'object') return null;
+    const posts = {};
+    for (const [pid, post] of Object.entries(user.posts || {})){
+      if (!post || typeof post !== 'object') continue;
+      const last = latestSnapshot(post.snapshots);
+      const next = { ...post };
+      if (last) next.snapshots = [last];
+      else if (Array.isArray(next.snapshots)) next.snapshots = [];
+      posts[pid] = next;
+    }
+    const liteUser = { ...user, posts };
+    if (Array.isArray(user.followers)) liteUser.followers = user.followers.slice(-1);
+    if (Array.isArray(user.cameos)) liteUser.cameos = user.cameos.slice(-1);
+    return { ...cache, user: liteUser };
+  }
+
+  function shrinkBootCacheToFit(cache, maxBytes){
+    if (!cache || !cache.user || !cache.user.posts) return null;
+    try {
+      const initialJson = JSON.stringify(cache);
+      if (initialJson.length <= maxBytes) return cache;
+    } catch {
+      return null;
+    }
+    const entries = Object.entries(cache.user.posts || {});
+    if (!entries.length) return null;
+    entries.sort((a, b) => {
+      const at = latestSnapshot(a[1]?.snapshots)?.t || 0;
+      const bt = latestSnapshot(b[1]?.snapshots)?.t || 0;
+      return bt - at;
+    });
+    const trimmedUser = { ...cache.user, posts: {} };
+    const trimmedCache = { ...cache, user: trimmedUser };
+    for (const [pid, post] of entries) {
+      trimmedUser.posts[pid] = post;
+      try {
+        const json = JSON.stringify(trimmedCache);
+        if (json.length > maxBytes) {
+          delete trimmedUser.posts[pid];
+          break;
+        }
+      } catch {
+        delete trimmedUser.posts[pid];
+        break;
+      }
+    }
+    return Object.keys(trimmedUser.posts).length ? trimmedCache : null;
+  }
+
+  function saveSessionCache(){
+    try {
+      if (!currentUserKey || isTopTodayKey(currentUserKey)) return;
+      const user = metrics?.users?.[currentUserKey];
+      if (!user) return;
+      if (!Array.isArray(usersIndex) || !usersIndex.length) {
+        usersIndex = buildUsersIndexFromMetrics(metrics);
+      }
+      const normalizedBestTime = normalizeBestTimeData(bestTimeData);
+      const bestTime = normalizedBestTime ? {
+        data: normalizedBestTime,
+        metricsUpdatedAt: lastBestTimeMetricsUpdatedAt || lastMetricsUpdatedAt || 0,
+        savedAt: lastBestTimeUpdate || 0
+      } : null;
+      const cache = {
+        userKey: currentUserKey,
+        user,
+        usersIndex,
+        metricsUpdatedAt: lastMetricsUpdatedAt || 0,
+        savedAt: Date.now(),
+        bestTime
+      };
+      const json = JSON.stringify(cache);
+      if (json.length > SESSION_CACHE_MAX_BYTES) return;
+      const now = Date.now();
+      if (now - lastSessionCacheAt < 5000) return;
+      lastSessionCacheAt = now;
+      try { sessionStorage.setItem(SESSION_CACHE_KEY, json); } catch {}
+      try {
+        const bootCache = buildBootCache(cache);
+        const trimmedBootCache = bootCache ? shrinkBootCacheToFit(bootCache, BOOT_CACHE_MAX_BYTES) : null;
+        if (!trimmedBootCache) {
+          localStorage.removeItem(BOOT_CACHE_KEY);
+          return;
+        }
+        localStorage.setItem(BOOT_CACHE_KEY, JSON.stringify(trimmedBootCache));
+      } catch {}
+    } catch {}
+  }
+
+  function normalizeBestTimeHeatmap(raw){
+    if (!raw || typeof raw !== 'object' || !Array.isArray(raw.matrix)) return null;
+    const matrix = raw.matrix
+      .slice(0, 7)
+      .map((row)=>{
+        if (!Array.isArray(row)) return [];
+        return row.slice(0, 24).map((v)=> Number(v) || 0);
+      });
+    if (!matrix.length) return null;
+    const out = { matrix };
+    if (Array.isArray(raw.counts)) {
+      const counts = raw.counts
+        .slice(0, 7)
+        .map((row)=>{
+          if (!Array.isArray(row)) return [];
+          return row.slice(0, 24).map((v)=> Math.max(0, Math.floor(Number(v) || 0)));
+        });
+      out.counts = counts;
+    }
+    if (Array.isArray(raw.avgLikes)) {
+      const avgLikes = raw.avgLikes
+        .slice(0, 7)
+        .map((row)=>{
+          if (!Array.isArray(row)) return [];
+          return row.slice(0, 24).map((v)=> Number(v) || 0);
+        });
+      out.avgLikes = avgLikes;
+    }
+    const max = Number(raw.max);
+    const min = Number(raw.min);
+    if (Number.isFinite(max)) out.max = max;
+    if (Number.isFinite(min)) out.min = min;
+    return out;
+  }
+
+  function normalizeBestTimeEntry(raw){
+    if (!raw || typeof raw !== 'object') return null;
+    const out = {};
+    if (raw.primary && typeof raw.primary === 'object') out.primary = raw.primary;
+    if (raw.secondary && typeof raw.secondary === 'object') out.secondary = raw.secondary;
+    const heatmap = normalizeBestTimeHeatmap(raw.heatmap);
+    if (heatmap) out.heatmap = heatmap;
+    if (!out.primary && !out.secondary && !out.heatmap) return null;
+    return out;
+  }
+
+  function normalizeBestTimeData(raw){
+    if (!raw || typeof raw !== 'object') return null;
+    const out = {};
+    let hasAny = false;
+    ['year', 'month', 'week'].forEach((range)=>{
+      const entry = normalizeBestTimeEntry(raw[range]);
+      if (entry) {
+        out[range] = entry;
+        hasAny = true;
+      } else {
+        out[range] = null;
+      }
+    });
+    return hasAny ? out : null;
+  }
+
+  function loadBestTimeCache(){
+    try {
+      const raw = localStorage.getItem(BEST_TIME_CACHE_KEY);
+      if (!raw) return null;
+      const cache = JSON.parse(raw);
+      const data = normalizeBestTimeData(cache?.data);
+      if (!data) return null;
+      return {
+        data,
+        metricsUpdatedAt: Number(cache?.metricsUpdatedAt) || 0,
+        savedAt: Number(cache?.savedAt) || 0
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  function saveBestTimeCache(data){
+    try {
+      if (!data || typeof data !== 'object') return;
+      const payload = {
+        data,
+        metricsUpdatedAt: lastBestTimeMetricsUpdatedAt || lastMetricsUpdatedAt || 0,
+        savedAt: Date.now()
+      };
+      localStorage.setItem(BEST_TIME_CACHE_KEY, JSON.stringify(payload));
+    } catch {}
+  }
+
+  function loadBestTimePrefs(){
+    try {
+      const raw = localStorage.getItem(BEST_TIME_PREFS_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      const out = {};
+      if (['week', 'month', 'year'].includes(parsed?.range)) out.range = parsed.range;
+      if (['primary', 'secondary', 'today'].includes(parsed?.rec)) out.rec = parsed.rec;
+      return Object.keys(out).length ? out : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function saveBestTimePrefs(){
+    try {
+      localStorage.setItem(BEST_TIME_PREFS_KEY, JSON.stringify({
+        range: bestTimeRange,
+        rec: bestTimeRec,
+        savedAt: Date.now()
+      }));
+    } catch {}
+  }
+
+  let lastBestTimeUpdate = 0;
+  let lastBestTimeMetricsUpdatedAt = 0;
+  let bestTimeData = null;
+  let bestTimeRange = 'year';
+  let bestTimeRec = 'primary';
+  let bestTimeHeatmapTooltip = null;
+  let bestTimeInfoTooltip = null;
+  let bestTimeRefreshInFlight = false;
+  let bestTimeRefreshQueued = false;
+
+  function hydrateBestTimeFromCache(sessionCache){
+    try {
+      const prefs = loadBestTimePrefs();
+      if (prefs?.range) bestTimeRange = prefs.range;
+      if (prefs?.rec) bestTimeRec = prefs.rec;
+      const cachedBestTime = sessionCache?.bestTime?.data ? sessionCache.bestTime : loadBestTimeCache();
+      if (cachedBestTime?.data) {
+        bestTimeData = cachedBestTime.data;
+        lastBestTimeMetricsUpdatedAt = cachedBestTime.metricsUpdatedAt || 0;
+        if (cachedBestTime.savedAt) lastBestTimeUpdate = cachedBestTime.savedAt;
+        if (typeof renderBestTimeWidget === 'function') {
+          renderBestTimeWidget(bestTimeData, bestTimeRange);
+        }
+        return true;
+      }
+    } catch (err) {
+      console.warn('[Dashboard] best time cache load failed', err);
+    }
+    return false;
+  }
 
   function applyTheme(themeId){
     const theme = THEME_PRESETS[themeId] || THEME_PRESETS.darkBlue;
@@ -110,8 +494,12 @@
     });
   }
 
+  function resolveThemeId(themeId){
+    return THEME_PRESETS[themeId] ? themeId : (THEME_ALIASES[themeId] || 'darkBlue');
+  }
+
   function setTheme(themeId, persist = true){
-    const resolved = THEME_PRESETS[themeId] ? themeId : (THEME_ALIASES[themeId] || 'darkBlue');
+    const resolved = resolveThemeId(themeId);
     applyTheme(resolved);
     if (persist) {
       try { localStorage.setItem(THEME_STORAGE_KEY, resolved); } catch {}
@@ -127,13 +515,111 @@
   function initThemePicker(){
     const swatches = $$('.theme-swatch');
     if (!swatches.length) return;
+    const picker = $('.theme-picker');
+    const toggleBtn = $('#themeToggle');
+    let hideTimer = null;
+    const inactivityEvents = ['mousemove', 'mousedown', 'touchstart', 'keydown', 'focusin'];
     let stored = null;
+    let themeToggleSeen = false;
+    let currentThemeId = 'darkBlue';
+    let previewThemeId = null;
+    let isHoveringPicker = false;
     try { stored = localStorage.getItem(THEME_STORAGE_KEY); } catch {}
-    setTheme(stored || 'darkBlue', false);
+    try { themeToggleSeen = localStorage.getItem(THEME_TOGGLE_SEEN_KEY) === '1'; } catch {}
+    currentThemeId = resolveThemeId(stored || 'darkBlue');
+    setTheme(currentThemeId, false);
+    if (toggleBtn) toggleBtn.classList.toggle('theme-seen', themeToggleSeen);
+
+    const clearHideTimer = ()=>{
+      if (hideTimer) {
+        clearTimeout(hideTimer);
+        hideTimer = null;
+      }
+    };
+    const hidePicker = ()=>{
+      clearHideTimer();
+      if (picker) {
+        picker.classList.add('is-hidden');
+        picker.setAttribute('aria-hidden', 'true');
+      }
+      if (toggleBtn) {
+        toggleBtn.classList.remove('is-hidden');
+        toggleBtn.setAttribute('aria-expanded', 'false');
+      }
+    };
+    const armHideTimer = ()=>{
+      clearHideTimer();
+      hideTimer = setTimeout(hidePicker, 12000);
+    };
+    const markThemeToggleSeen = ()=>{
+      if (!toggleBtn || toggleBtn.classList.contains('theme-seen')) return;
+      toggleBtn.classList.add('theme-seen');
+      try { localStorage.setItem(THEME_TOGGLE_SEEN_KEY, '1'); } catch {}
+    };
+    const registerActivity = (el)=>{
+      if (!el) return;
+      inactivityEvents.forEach((eventName)=>{
+        el.addEventListener(eventName, armHideTimer, { passive: true });
+      });
+    };
+    const showPicker = ()=>{
+      if (picker) {
+        picker.classList.remove('is-hidden');
+        picker.setAttribute('aria-hidden', 'false');
+      }
+      if (toggleBtn) {
+        toggleBtn.classList.add('is-hidden');
+        toggleBtn.setAttribute('aria-expanded', 'true');
+      }
+      armHideTimer();
+    };
+
+    if (toggleBtn && picker) {
+      hidePicker();
+      toggleBtn.addEventListener('click', (e)=>{
+        e.preventDefault();
+        showPicker();
+        markThemeToggleSeen();
+      });
+      registerActivity(picker);
+      registerActivity(toggleBtn);
+      picker.addEventListener('mouseenter', ()=>{
+        isHoveringPicker = true;
+      });
+      picker.addEventListener('mouseleave', ()=>{
+        isHoveringPicker = false;
+        if (previewThemeId) {
+          applyTheme(currentThemeId);
+          previewThemeId = null;
+          try { window.dispatchEvent(new CustomEvent('sct-theme-change', { detail: { themeId: currentThemeId, preview: false } })); } catch {}
+          setPaletteOffset(basePaletteOffset);
+        }
+      });
+    }
     swatches.forEach((btn)=>{
+      btn.addEventListener('mouseenter', ()=>{
+        const themeId = resolveThemeId(btn.dataset.theme || 'blue');
+        previewThemeId = themeId;
+        applyTheme(themeId);
+        try { window.dispatchEvent(new CustomEvent('sct-theme-change', { detail: { themeId, preview: true } })); } catch {}
+        setPaletteOffset(basePaletteOffset + 1);
+        armHideTimer();
+      });
+      btn.addEventListener('mouseleave', ()=>{
+        if (previewThemeId && !isHoveringPicker) {
+          applyTheme(currentThemeId);
+          previewThemeId = null;
+          try { window.dispatchEvent(new CustomEvent('sct-theme-change', { detail: { themeId: currentThemeId, preview: false } })); } catch {}
+          setPaletteOffset(basePaletteOffset);
+        }
+      });
       btn.addEventListener('click', ()=>{
         const themeId = btn.dataset.theme || 'blue';
         setTheme(themeId);
+        currentThemeId = resolveThemeId(themeId);
+        previewThemeId = null;
+        setPaletteOffset(basePaletteOffset);
+        hidePicker();
       });
     });
   }
@@ -145,9 +631,75 @@
     return accent || THEME_PRESETS.darkBlue.accent;
   }
 
+  function getChartDragColors(){
+    const root = document.documentElement;
+    if (!root) {
+      return { stroke: '#7dc4ff', fill: '#7dc4ff22' };
+    }
+    const styles = getComputedStyle(root);
+    const accentRgb = styles.getPropertyValue('--accent-rgb').trim() || THEME_PRESETS.darkBlue.accentRgb;
+    const strokeAlphaValue = parseFloat(styles.getPropertyValue('--chart-drag-stroke-alpha'));
+    const fillAlphaValue = parseFloat(styles.getPropertyValue('--chart-drag-fill-alpha'));
+    const strokeAlpha = Number.isFinite(strokeAlphaValue) ? strokeAlphaValue : 0.9;
+    const fillAlpha = Number.isFinite(fillAlphaValue) ? fillAlphaValue : 0.14;
+    return {
+      stroke: `rgba(${accentRgb},${strokeAlpha})`,
+      fill: `rgba(${accentRgb},${fillAlpha})`
+    };
+  }
+
+  function getChartGridColor(){
+    const root = document.documentElement;
+    if (!root) return '#25303b';
+    const styles = getComputedStyle(root);
+    const accentRgb = styles.getPropertyValue('--accent-rgb').trim() || THEME_PRESETS.darkBlue.accentRgb;
+    const gridAlphaValue = parseFloat(styles.getPropertyValue('--chart-grid-alpha'));
+    const gridAlpha = Number.isFinite(gridAlphaValue) ? gridAlphaValue : 0.3;
+    return `rgba(${accentRgb},${gridAlpha})`;
+  }
+
+  function getPaletteColor(idx){
+    const len = COLORS.length || 1;
+    const offset = ((paletteOffset % len) + len) % len;
+    return COLORS[(idx + offset) % len];
+  }
+
+  function setPaletteOffset(nextOffset){
+    const len = COLORS.length || 1;
+    paletteOffset = ((nextOffset % len) + len) % len;
+    if (makeColorMap.cache) makeColorMap.cache.clear();
+    if (typeof renderComparePills === 'function') renderComparePills();
+    if (typeof updateCompareCharts === 'function') updateCompareCharts();
+    if (typeof refreshUserUI === 'function') {
+      refreshUserUI({ preserveEmpty: true, skipPostListRebuild: true, skipRestoreZoom: true });
+    }
+  }
+
   function getCompareSeriesColor(idx){
     if (idx === 0) return getCurrentThemeAccent();
-    return COLORS[idx % COLORS.length];
+    return getPaletteColor(idx);
+  }
+
+  function setCompareNextColor(color){
+    const section = document.querySelector('.compare-section');
+    if (!section) return;
+    const rgb = (function(){
+      if (!color) return null;
+      const hex = color.startsWith('#') ? color.slice(1) : color;
+      if (hex.length !== 6) return null;
+      const r = parseInt(hex.slice(0, 2), 16);
+      const g = parseInt(hex.slice(2, 4), 16);
+      const b = parseInt(hex.slice(4, 6), 16);
+      if (![r,g,b].every(Number.isFinite)) return null;
+      return { r, g, b };
+    })();
+    if (!rgb) {
+      section.style.removeProperty('--compare-next-color');
+      section.style.removeProperty('--compare-next-border');
+      return;
+    }
+    section.style.setProperty('--compare-next-color', color);
+    section.style.setProperty('--compare-next-border', `rgba(${rgb.r},${rgb.g},${rgb.b},0.35)`);
   }
   
   // Blend two hex colors (50/50 mix)
@@ -188,6 +740,13 @@
     if (n >= 1e6) return (n/1e6).toFixed(n%1e6?1:0)+'M';
     if (n >= 1e3) return (n/1e3).toFixed(n%1e3?1:0)+'K';
     return String(n);
+  }
+  function fmt1(n){
+    const v = Number(n);
+    if (!isFinite(v)) return '-';
+    if (v >= 1e6) return (v/1e6).toFixed(1)+'M';
+    if (v >= 1e3) return (v/1e3).toFixed(1)+'K';
+    return v.toFixed(1);
   }
 
   // Fixed-two-decimal formatter with K/M suffixes
@@ -417,7 +976,8 @@
   // - If a post has an ownerKey different from this user, move it to that owner user bucket.
   // - If ownerKey is missing but ownerId exists, derive key as id:<ownerId> and move there.
   // - If both ownerKey and ownerId are missing, move the post to the 'unknown' user bucket.
-  async function pruneMismatchedPostsForUser(metrics, userKey){
+  async function pruneMismatchedPostsForUser(metrics, userKey, opts = {}){
+    const log = opts.log !== false;
     try {
       const user = metrics?.users?.[userKey];
       if (!user || !user.posts) return { moved: [], kept: 0 };
@@ -468,12 +1028,12 @@
       }
       if (moved.length){
         metrics.users[userKey].posts = keep;
-        try { console.info('[Dashboard] reconciled posts', { userKey, total, moved: moved.length }); } catch {}
-        // Log each moved item for traceability
-        try { moved.forEach(it=> console.info('[Dashboard] moved post', it)); } catch {}
-        await chrome.storage.local.set({ metrics });
+        // Reconciliation logging removed.
+        const affectedKeys = new Set([userKey]);
+        moved.forEach((it)=>{ if (it && it.to) affectedKeys.add(it.to); });
+        await saveMetrics(metrics, { userKeys: Array.from(affectedKeys) });
       } else {
-        try { console.info('[Dashboard] no mismatched or owner-missing posts found', { userKey, total }); } catch {}
+        // Reconciliation logging removed.
       }
       return { moved, kept: Object.keys(metrics.users[userKey].posts).length };
     } catch (e) {
@@ -509,8 +1069,7 @@
       }
       if (removed.length){
         metrics.users[userKey].posts = keep;
-        try { console.info('[Dashboard] pruned empty posts', { userKey, removedCount: removed.length, removed }); } catch {}
-        await chrome.storage.local.set({ metrics });
+        await saveMetrics(metrics, { userKeys: [userKey] });
       }
       return { removed };
     } catch(e){
@@ -546,8 +1105,7 @@
         }
       }
       if (moved){
-        try { console.info('[Dashboard] reclaimed posts from unknown', { userKey, moved }); } catch {}
-        await chrome.storage.local.set({ metrics });
+        await saveMetrics(metrics, { userKeys: [userKey, 'unknown'] });
       }
       return { moved };
     } catch(e){
@@ -578,12 +1136,54 @@
     return removed;
   }
 
-  async function loadMetrics(){
-    const { metrics = { users:{} } } = await chrome.storage.local.get('metrics');
-    const removed = pruneEmptyUsers(metrics);
-    if (removed) {
-      try { await chrome.storage.local.set({ metrics }); } catch {}
+  async function saveMetrics(nextMetrics, opts = {}){
+    const metricsUpdatedAt = Date.now();
+    const payload = { metrics: nextMetrics, metricsUpdatedAt };
+    const shouldUpdateIndex = opts.updateIndex !== false && !isMetricsPartial;
+    if (shouldUpdateIndex) {
+      usersIndex = buildUsersIndexFromMetrics(nextMetrics);
+      payload[USERS_INDEX_STORAGE_KEY] = usersIndex;
     }
+    try {
+      await chrome.storage.local.set(payload);
+      lastMetricsUpdatedAt = metricsUpdatedAt;
+    } catch {}
+  }
+
+  async function getMetricsUpdatedAt(){
+    try {
+      const st = await chrome.storage.local.get('metricsUpdatedAt');
+      const v = Number(st.metricsUpdatedAt);
+      return Number.isFinite(v) ? v : 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  async function loadMetrics(){
+    const perfGet = perfStart('storage.get metrics');
+    const { metrics = { users:{} }, metricsUpdatedAt } = await chrome.storage.local.get(['metrics', 'metricsUpdatedAt']);
+    perfEnd(perfGet);
+    if (metricsUpdatedAt != null) {
+      const next = Number(metricsUpdatedAt);
+      if (Number.isFinite(next) && next > 0) lastMetricsUpdatedAt = next;
+    }
+    const perfPrune = perfStart('prune empty users');
+    const removed = pruneEmptyUsers(metrics);
+    perfEnd(perfPrune);
+    if (removed) {
+      const perfSet = perfStart('storage.set metrics');
+      await saveMetrics(metrics, { userKeys: Object.keys(metrics.users || {}) });
+      if (!lastMetricsUpdatedAt) {
+        lastMetricsUpdatedAt = Date.now();
+      }
+      perfEnd(perfSet);
+    } else if (!lastMetricsUpdatedAt) {
+      const ts = Date.now();
+      lastMetricsUpdatedAt = ts;
+      try { await chrome.storage.local.set({ metricsUpdatedAt: ts }); } catch {}
+    }
+    usersIndex = buildUsersIndexFromMetrics(metrics);
     return metrics;
   }
 
@@ -593,8 +1193,9 @@
     const sel = $('#userSelect');
     sel.innerHTML = '';
 
-    // "Top Today" virtual option (last 24h across all users)
-    {
+    const useIndex = Array.isArray(usersIndex) && usersIndex.length > 0;
+    if (!isMetricsPartial) {
+      // "Top Today" virtual option (last 24h across all users)
       const topToday = buildTopTodayUser(metrics);
       const opt = document.createElement('option');
       opt.value = TOP_TODAY_KEY;
@@ -603,14 +1204,14 @@
       sel.appendChild(opt);
     }
 
-    let entries = Object.entries(metrics.users);
+    let entries = useIndex ? usersIndex.map((entry)=>[entry.key, entry]) : Object.entries(metrics.users);
     // Sort by post count (most to least), pushing 'unknown' to the end
     const users = entries.sort((a,b)=>{
       const ax = a[0]==='unknown' ? 1 : 0;
       const bx = b[0]==='unknown' ? 1 : 0;
       if (ax !== bx) return ax - bx;
-      const aCount = Object.keys(a[1].posts||{}).length;
-      const bCount = Object.keys(b[1].posts||{}).length;
+      const aCount = useIndex ? (Number(a[1].postCount) || 0) : Object.keys(a[1].posts||{}).length;
+      const bCount = useIndex ? (Number(b[1].postCount) || 0) : Object.keys(b[1].posts||{}).length;
       if (aCount !== bCount) return bCount - aCount; // Descending order
       // If same post count, sort alphabetically
       const A = (a[1].handle||a[0]||'').toLowerCase();
@@ -620,7 +1221,7 @@
     for (const [key, u] of users){
       const opt = document.createElement('option');
       opt.value = key;
-      const postCount = Object.keys(u.posts||{}).length;
+      const postCount = useIndex ? (Number(u.postCount) || 0) : Object.keys(u.posts||{}).length;
       opt.textContent = formatUserOptionLabel(u.handle || key, postCount);
       sel.appendChild(opt);
     }
@@ -683,6 +1284,19 @@
   function filterUsersByQuery(metrics, q){
     const res = [];
     const needle = q.trim().toLowerCase();
+    if (Array.isArray(usersIndex) && usersIndex.length) {
+      for (const entry of usersIndex){
+        const name = (entry.handle || entry.key || '').toLowerCase();
+        if (!needle || name.includes(needle)) res.push([entry.key, entry]);
+      }
+      res.sort((a,b)=>{
+        const aCount = Number(a[1].postCount) || 0;
+        const bCount = Number(b[1].postCount) || 0;
+        if (aCount !== bCount) return bCount - aCount;
+        return (a[1].handle||a[0]||'').localeCompare(b[1].handle||b[0]||'');
+      });
+      return res;
+    }
     for (const [key, u] of Object.entries(metrics.users)){
       const name = (u.handle || key || '').toLowerCase();
       if (!needle || name.includes(needle)) res.push([key,u]);
@@ -698,6 +1312,9 @@
   }
 
   function countUserPosts(user){
+    if (!user) return 0;
+    const pc = Number(user.postCount);
+    if (Number.isFinite(pc)) return pc;
     return Object.keys(user?.posts || {}).length;
   }
 
@@ -712,8 +1329,9 @@
 
   function formatUserSelectionLabel(userKey, user){
     if (!userKey) return '';
-    const count = countUserPosts(user);
-    const name = isTopTodayKey(userKey) ? EVERYONE_LABEL : (user?.handle || userKey);
+    const meta = user || findUserIndexEntry(userKey);
+    const count = countUserPosts(meta);
+    const name = isTopTodayKey(userKey) ? EVERYONE_LABEL : (meta?.handle || user?.handle || userKey);
     return formatUserOptionLabel(name, count);
   }
 
@@ -721,7 +1339,7 @@
     const needle = (query || '').trim().toLowerCase();
     const items = [];
     const everyoneSearch = 'top today everyone all users';
-    if (!needle || everyoneSearch.includes(needle)){
+    if ((!needle || everyoneSearch.includes(needle)) && !isMetricsPartial){
       const topToday = buildTopTodayUser(metrics);
       items.push({ key: TOP_TODAY_KEY, label: EVERYONE_LABEL, count: countUserPosts(topToday), hint: '' });
     }
@@ -1118,6 +1736,7 @@
         };
       });
       const sorted = mapped.sort((a,b)=>{
+        if (!a || !b) return !a && !b ? 0 : (!a ? 1 : -1);
         const dl = b.likes - a.likes;
         if (dl !== 0) return dl;
         const dv = b.views - a.views;
@@ -1216,6 +1835,11 @@
     const cache = row._sctCache || {};
     row.dataset.pid = p.pid;
     const thumbDiv = cache.thumbDiv || row.querySelector('.thumb');
+    const thumbLink = cache.thumbLink || row.querySelector('.thumb-link');
+    if (thumbLink) {
+      if (thumbLink.href !== p.url) thumbLink.href = p.url;
+      if (thumbLink.title !== p.title) thumbLink.title = p.title;
+    }
     const nextThumbUrl = p.thumb || DEFAULT_THUMB_URL;
     if (thumbDiv) {
       if (row._sctThumbUrl !== nextThumbUrl) {
@@ -1241,7 +1865,7 @@
     }
     const statsDiv = cache.statsDiv || row.querySelector('.stats');
     if (statsDiv) {
-      const nextStats = `Unique ${fmt(p.last?.uv)} • Likes ${fmt(p.last?.likes)} • IR ${p.rate==null?'-':p.rate.toFixed(1)+'%'}`;
+      const nextStats = `${fmt(p.last?.likes)} Likes - ${fmt1(p.last?.uv)} Viewers - ${p.rate==null?'-':p.rate.toFixed(1)+'%'} IR`;
       if (statsDiv.textContent !== nextStats) statsDiv.textContent = nextStats;
     }
     const toggleDiv = cache.toggleDiv || row.querySelector('.toggle');
@@ -1263,8 +1887,15 @@
     const row = document.createElement('div');
     row.className = 'post';
     row.dataset.pid = p.pid;
-    const color = typeof colorFor === 'function' ? colorFor(p.pid) : COLORS[0];
+    const color = typeof colorFor === 'function' ? colorFor(p.pid) : getPaletteColor(0);
     const thumbUrl = p.thumb || DEFAULT_THUMB_URL;
+
+    const thumbLink = document.createElement('a');
+    thumbLink.className = 'thumb-link';
+    thumbLink.href = p.url;
+    thumbLink.target = '_blank';
+    thumbLink.rel = 'noopener';
+    thumbLink.title = p.title;
 
     const thumbDiv = document.createElement('div');
     thumbDiv.className = 'thumb';
@@ -1273,6 +1904,7 @@
     dotDiv.className = 'dot';
     dotDiv.style.background = color;
     thumbDiv.appendChild(dotDiv);
+    thumbLink.appendChild(thumbDiv);
 
     const metaDiv = document.createElement('div');
     metaDiv.className = 'meta';
@@ -1289,7 +1921,7 @@
 
     const statsDiv = document.createElement('div');
     statsDiv.className = 'stats';
-    statsDiv.textContent = `Unique ${fmt(p.last?.uv)} • Likes ${fmt(p.last?.likes)} • IR ${p.rate==null?'-':p.rate.toFixed(1)+'%'}`;
+    statsDiv.textContent = `${fmt(p.last?.likes)} Likes - ${fmt1(p.last?.uv)} Viewers - ${p.rate==null?'-':p.rate.toFixed(1)+'%'} IR`;
 
     metaDiv.appendChild(idDiv);
     metaDiv.appendChild(statsDiv);
@@ -1312,11 +1944,11 @@
       if (onPurge) onPurge(p.pid, snippet);
     });
 
-    row.appendChild(thumbDiv);
+    row.appendChild(thumbLink);
     row.appendChild(metaDiv);
     row.appendChild(toggleDiv);
     row.appendChild(purgeBtn);
-    row._sctCache = { thumbDiv, dotDiv, link, statsDiv, toggleDiv };
+    row._sctCache = { thumbDiv, thumbLink, dotDiv, link, statsDiv, toggleDiv };
     row._sctLabelKey = buildPostLabelKey(p);
     row._sctThumbUrl = thumbUrl;
     row._sctPurgeSnippet = truncateForPurgeCaption(p.caption || p.label || p.pid);
@@ -1562,7 +2194,7 @@
         const viewValue = useUniqueViews ? s.uv : s.views;
         if (viewValue != null && r != null) pts.push({ x:viewValue, y:r, t:s.t });
       }
-      const color = typeof colorFor === 'function' ? colorFor(pid) : COLORS[i % COLORS.length];
+      const color = typeof colorFor === 'function' ? colorFor(pid) : getPaletteColor(i);
       const owner = user?.__specialKey === TOP_TODAY_KEY ? (p?.ownerHandle || '') : (user?.handle || '');
       const label = buildPostLabel({ ...p, id: pid }, owner);
       if (pts.length) series.push({ id: pid, label, color, points: pts, highlighted: selectedPIDs.includes(pid) });
@@ -1577,8 +2209,8 @@
     const cacheKey = key + '::' + ids.join(',');
     if (makeColorMap.cache.has(cacheKey)) return makeColorMap.cache.get(cacheKey);
     const map = new Map();
-    ids.forEach((pid, idx)=> map.set(pid, COLORS[idx % COLORS.length]));
-    const fn = (pid) => map.get(pid) || COLORS[0];
+    ids.forEach((pid, idx)=> map.set(pid, getPaletteColor(idx)));
+    const fn = (pid) => map.get(pid) || getPaletteColor(0);
     makeColorMap.cache.clear(); // keep cache bounded; only one entry needed per current state
     makeColorMap.cache.set(cacheKey, fn);
     return fn;
@@ -1596,7 +2228,57 @@
     return [lo,hi];
   }
 
-  function makeChart(canvas, xAxisLabel = 'Unique viewers', tooltipLabel = 'Unique'){
+  const LINE_CURVE_TENSION = 0.28;
+
+  function drawSmoothLine(ctx, points, mapX, mapY, tension = LINE_CURVE_TENSION){
+    if (!points || points.length < 2) return false;
+    const mapped = points.map((p)=>({ x: mapX(p.x), y: mapY(p.y) }));
+    ctx.beginPath();
+    ctx.moveTo(mapped[0].x, mapped[0].y);
+    if (mapped.length === 2 || tension <= 0){
+      ctx.lineTo(mapped[1].x, mapped[1].y);
+      return true;
+    }
+    const t = Math.max(0, Math.min(1, tension));
+    const smoothFactor = (p0, p1, p2)=>{
+      const v1x = p1.x - p0.x;
+      const v1y = p1.y - p0.y;
+      const v2x = p2.x - p1.x;
+      const v2y = p2.y - p1.y;
+      const len1 = Math.hypot(v1x, v1y);
+      const len2 = Math.hypot(v2x, v2y);
+      if (!len1 || !len2) return 0;
+      const cos = clamp((v1x * v2x + v1y * v2y) / (len1 * len2), -1, 1);
+      const angle = Math.acos(cos);
+      const angleFactor = Math.max(0, 1 - angle / Math.PI);
+      const lenFactor = Math.min(len1, len2) / Math.max(len1, len2);
+      return angleFactor * lenFactor;
+    };
+    for (let i = 0; i < mapped.length - 1; i++){
+      const p0 = mapped[i - 1] || mapped[i];
+      const p1 = mapped[i];
+      const p2 = mapped[i + 1];
+      const p3 = mapped[i + 2] || p2;
+      const t1 = t * smoothFactor(p0, p1, p2);
+      const t2 = t * smoothFactor(p1, p2, p3);
+      let cp1x = p1.x + (p2.x - p0.x) * t1 / 6;
+      let cp1y = p1.y + (p2.y - p0.y) * t1 / 6;
+      let cp2x = p2.x - (p3.x - p1.x) * t2 / 6;
+      let cp2y = p2.y - (p3.y - p1.y) * t2 / 6;
+      const minX = Math.min(p1.x, p2.x);
+      const maxX = Math.max(p1.x, p2.x);
+      const minY = Math.min(p1.y, p2.y);
+      const maxY = Math.max(p1.y, p2.y);
+      cp1x = clamp(cp1x, minX, maxX);
+      cp2x = clamp(cp2x, minX, maxX);
+      cp1y = clamp(cp1y, minY, maxY);
+      cp2y = clamp(cp2y, minY, maxY);
+      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+    }
+    return true;
+  }
+
+  function makeChart(canvas, xAxisLabel = 'Viewers', tooltipLabel = 'Viewers'){
     const ctx = canvas.getContext('2d');
     const DPR = Math.max(1, window.devicePixelRatio||1);
     let W = canvas.clientWidth||canvas.width, H = canvas.clientHeight||canvas.height;
@@ -1633,7 +2315,8 @@
     }
 
     function grid(){
-      ctx.strokeStyle = '#25303b'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+      const gridColor = getChartGridColor();
+      ctx.strokeStyle = gridColor; ctx.lineWidth=1; ctx.setLineDash([4,4]);
       // verticals (x)
       for (let i=0;i<6;i++){ const x = M.left + i*(W-(M.left+M.right))/5; ctx.beginPath(); ctx.moveTo(x, M.top); ctx.lineTo(x, H - M.bottom); ctx.stroke(); }
       // horizontals (y)
@@ -1669,12 +2352,8 @@
         const color = (anyHover && state.hoverSeries !== s.id) ? muted : s.color;
         // line
         if (s.points.length>1){
-          ctx.strokeStyle = color; ctx.lineWidth = s.highlighted ? 2.2 : 1.2; ctx.beginPath();
-          for (let i=0;i<s.points.length;i++){
-            const p = s.points[i]; const x = mapX(p.x), y = mapY(p.y);
-            if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-          }
-          ctx.stroke();
+          ctx.strokeStyle = color; ctx.lineWidth = s.highlighted ? 2.2 : 1.2; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+          if (drawSmoothLine(ctx, s.points, mapX, mapY)) ctx.stroke();
         }
         // points
         for (const p of s.points){
@@ -1848,6 +2527,9 @@
     let drag = null; // {x0,y0,x1,y1}
     let dragRaf = 0;
     let lastDragPos = null;
+    let dragMoved = false;
+    let lastDragTs = 0;
+    const dragClickThreshold = 4;
 
     function updateDragFromEvent(e){
       if (!drag || !e) return;
@@ -1861,6 +2543,11 @@
         const my = (lastDragPos.y - rect.top) * (canvas.height / rect.height) / DPR;
         drag.x1 = mx;
         drag.y1 = my;
+        const dx = mx - drag.x0;
+        const dy = my - drag.y0;
+        if (!dragMoved && Math.hypot(dx, dy) > dragClickThreshold) {
+          dragMoved = true;
+        }
         draw();
         drawDragRect(drag);
         showTooltip(null);
@@ -1873,6 +2560,7 @@
     canvas.addEventListener('click', (e)=>{
       // Skip link opens immediately after a drag selection
       if (drag) return;
+      if (Date.now() - lastDragTs < 250) return;
       if (state.hover && state.hover.url) {
         window.open(state.hover.url, '_blank');
         return;
@@ -1893,6 +2581,7 @@
       let x0 = (e.clientX - rect.left) * (canvas.width/rect.width) / DPR;
       let y0 = (e.clientY - rect.top) * (canvas.height/rect.height) / DPR;
       // allow starting outside; we'll clamp on render/mouseup
+      dragMoved = false;
       drag = { x0, y0, x1: null, y1: null };
     });
     window.addEventListener('mouseup', (e)=>{
@@ -1900,12 +2589,16 @@
       const rect = canvas.getBoundingClientRect();
       let x1 = (e.clientX - rect.left) * (canvas.width/rect.width) / DPR;
       let y1 = (e.clientY - rect.top) * (canvas.height/rect.height) / DPR;
+      const dx = x1 - drag.x0;
+      const dy = y1 - drag.y0;
+      const didDrag = dragMoved || Math.hypot(dx, dy) > dragClickThreshold;
       // clamp both ends to plot for decision and mapping
       const [cx0, cy0] = clampToPlot(drag.x0, drag.y0);
       const [cx1, cy1] = clampToPlot(x1, y1);
       drag.x1 = cx1; drag.y1 = cy1; // store clamped end for consistent rectangle draw
       const minW = 10, minH = 10;
       const w = Math.abs(cx1 - cx0), h = Math.abs(cy1 - cy0);
+      if (didDrag) lastDragTs = Date.now();
       if (w > minW && h > minH){
         // convert to data space
         const [X0,X1] = [cx0, cx1].sort((a,b)=>a-b);
@@ -1915,12 +2608,14 @@
         state.zoomX = [invMapX(X0), invMapX(X1)];
         state.zoomY = [invMapY(Y1), invMapY(Y0)];
       }
+      dragMoved = false;
       drag = null; draw(); showTooltip(null);
     });
 
     function drawDragRect(d){
       if (!d || d.x1==null || d.y1==null) return;
-      ctx.save(); ctx.strokeStyle = '#7dc4ff'; ctx.fillStyle = '#7dc4ff22'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+      const dragColors = getChartDragColors();
+      ctx.save(); ctx.strokeStyle = dragColors.stroke; ctx.fillStyle = dragColors.fill; ctx.lineWidth=1; ctx.setLineDash([4,3]);
       // clamp rect to plot area for rendering
       const x0 = Math.max(M.left, Math.min(W - M.right, d.x0));
       const y0 = Math.max(M.top,  Math.min(H - M.bottom, d.y0));
@@ -1980,7 +2675,8 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       return [x,y];
     }
     function grid(){
-      ctx.strokeStyle = '#25303b'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+      const gridColor = getChartGridColor();
+      ctx.strokeStyle = gridColor; ctx.lineWidth=1; ctx.setLineDash([4,4]);
       for (let i=0;i<6;i++){ const x = M.left + i*(W-(M.left+M.right))/5; ctx.beginPath(); ctx.moveTo(x, M.top); ctx.lineTo(x, H - M.bottom); ctx.stroke(); }
       for (let i=0;i<6;i++){ const y = M.top + i*(H-(M.top+M.bottom))/5; ctx.beginPath(); ctx.moveTo(M.left, y); ctx.lineTo(W - M.right, y); ctx.stroke(); }
       ctx.setLineDash([]);
@@ -2292,6 +2988,9 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     let drag=null;
     let dragRaf = 0;
     let lastDragPos = null;
+    let dragMoved = false;
+    let lastDragTs = 0;
+    const dragClickThreshold = 4;
 
     function updateDragFromEvent(e){
       if (!drag || !e) return;
@@ -2305,6 +3004,11 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         const my = (lastDragPos.y - rect.top) * (canvas.height / rect.height) / DPR;
         drag.x1 = mx;
         drag.y1 = my;
+        const dx = mx - drag.x0;
+        const dy = my - drag.y0;
+        if (!dragMoved && Math.hypot(dx, dy) > dragClickThreshold) {
+          dragMoved = true;
+        }
         state.comparisonLine = null;
         draw();
         drawDragRect(drag);
@@ -2318,7 +3022,9 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     let lastDblClickTs = 0;
     canvas.addEventListener('dblclick', ()=>{ lastDblClickTs = Date.now(); state.zoomX=null; state.zoomY=null; draw(); });
     canvas.addEventListener('click', (e)=>{
-      if (Date.now() - lastDblClickTs < 250) return; // ignore clicks immediately after dblclick
+      const now = Date.now();
+      if (now - lastDblClickTs < 250) return; // ignore clicks immediately after dblclick
+      if (now - lastDragTs < 250) return;
       if (state.hover && state.hover.url) {
         window.open(state.hover.url,'_blank');
         return;
@@ -2334,19 +3040,22 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       }
     });
     canvas.addEventListener('mousedown',(e)=>{
-      const rect=canvas.getBoundingClientRect(); let x0=(e.clientX-rect.left)*(canvas.width/rect.width)/DPR; let y0=(e.clientY-rect.top)*(canvas.height/rect.height)/DPR; drag={x0,y0,x1:null,y1:null};
+      const rect=canvas.getBoundingClientRect(); let x0=(e.clientX-rect.left)*(canvas.width/rect.width)/DPR; let y0=(e.clientY-rect.top)*(canvas.height/rect.height)/DPR; dragMoved=false; drag={x0,y0,x1:null,y1:null};
     });
     window.addEventListener('mouseup',(e)=>{
-      if (!drag) return; const rect=canvas.getBoundingClientRect(); let x1=(e.clientX-rect.left)*(canvas.width/rect.width)/DPR; let y1=(e.clientY-rect.top)*(canvas.height/rect.height)/DPR;
+      if (!drag) return; const rect=canvas.getBoundingClientRect(); let x1=(e.clientX-rect.left)*(canvas.width/rect.width)/DPR; let y1=(e.clientY-rect.top)*(canvas.height/rect.height)/DPR; const dx=x1-drag.x0; const dy=y1-drag.y0; const didDrag=dragMoved||Math.hypot(dx, dy)>dragClickThreshold;
       const [cx0,cy0]=clampToPlot(drag.x0,drag.y0); const [cx1,cy1]=clampToPlot(x1,y1);
-      drag.x1=cx1; drag.y1=cy1; const minW=10,minH=10; const w=Math.abs(cx1-cx0), h=Math.abs(cy1-cy0);
+      drag.x1=cx1; drag.y1=cy1; const minW=10,minH=10; const w=Math.abs(cx1-cx0), h=Math.abs(cy1-cy0); if (didDrag) lastDragTs=Date.now();
       if (w>minW && h>minH){ const [X0,X1]=[cx0,cx1].sort((a,b)=>a-b); const [Y0,Y1]=[cy0,cy1].sort((a,b)=>a-b);
         const invMapX=(px)=>{ const [a,b]=(state.zoomX||state.x); return a + ((px-M.left)/(W-(M.left+M.right)))*(b-a); };
         const invMapY=(py)=>{ const [a,b]=(state.zoomY||state.y); return a + (((H-M.bottom)-py)/(H-(M.top+M.bottom)))*(b-a); };
         state.zoomX=[invMapX(X0),invMapX(X1)]; state.zoomY=[invMapY(Y1),invMapY(Y0)]; }
-      drag=null; draw(); showTooltip(null);
+      dragMoved=false; drag=null; draw(); showTooltip(null);
     });
-    function drawDragRect(d){ if (!d||d.x1==null||d.y1==null) return; ctx.save(); ctx.strokeStyle='#7dc4ff'; ctx.fillStyle='#7dc4ff22'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+    function drawDragRect(d){
+      if (!d||d.x1==null||d.y1==null) return;
+      const dragColors = getChartDragColors();
+      ctx.save(); ctx.strokeStyle=dragColors.stroke; ctx.fillStyle=dragColors.fill; ctx.lineWidth=1; ctx.setLineDash([4,3]);
       const x0=Math.max(M.left,Math.min(W-M.right,d.x0)); const y0=Math.max(M.top,Math.min(H-M.bottom,d.y0)); const x1=Math.max(M.left,Math.min(W-M.right,d.x1)); const y1=Math.max(M.top,Math.min(H-M.bottom,d.y1));
       const x=Math.min(x0,x1), y=Math.min(y0,y1), w=Math.abs(x1-x0), h=Math.abs(y1-y0); ctx.strokeRect(x,y,w,h); ctx.fillRect(x,y,w,h); ctx.restore(); }
     function drawComparisonLine(){
@@ -2388,8 +3097,8 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     
     function drawSeries(){
       const muted='#38424c'; const anyHover=!!state.hoverSeries;
-      for (const s of state.series){ const color=(anyHover && state.hoverSeries!==s.id)?muted:s.color; if (s.points.length>1){ ctx.strokeStyle=color; ctx.lineWidth=1.4; ctx.beginPath();
-        for (let i=0;i<s.points.length;i++){ const p=s.points[i]; const x=mapX(p.x), y=mapY(p.y); if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);} ctx.stroke(); }
+      for (const s of state.series){ const color=(anyHover && state.hoverSeries!==s.id)?muted:s.color; if (s.points.length>1){ ctx.strokeStyle=color; ctx.lineWidth=1.4; ctx.lineJoin='round'; ctx.lineCap='round';
+        if (drawSmoothLine(ctx, s.points, mapX, mapY)) ctx.stroke(); }
         for (const p of s.points){ const x=mapX(p.x), y=mapY(p.y); const isHover=state.hover && state.hover.pid===s.id && state.hover.i===p.t; ctx.fillStyle=color; ctx.beginPath(); ctx.arc(x,y,isHover?4.2:2.4,0,Math.PI*2); ctx.fill(); if (isHover){ ctx.strokeStyle='#ffffffaa'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.stroke(); } }
       }
     }
@@ -2455,7 +3164,8 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       return [x,y];
     }
     function grid(){
-      ctx.strokeStyle = '#25303b'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+      const gridColor = getChartGridColor();
+      ctx.strokeStyle = gridColor; ctx.lineWidth=1; ctx.setLineDash([4,4]);
       for (let i=0;i<6;i++){ const x = M.left + i*(W-(M.left+M.right))/5; ctx.beginPath(); ctx.moveTo(x, M.top); ctx.lineTo(x, H - M.bottom); ctx.stroke(); }
       for (let i=0;i<6;i++){ const y = M.top + i*(H-(M.top+M.bottom))/5; ctx.beginPath(); ctx.moveTo(M.left, y); ctx.lineTo(W - M.right, y); ctx.stroke(); }
       ctx.setLineDash([]);
@@ -2487,7 +3197,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       }
       ctx.fillStyle = '#e8eaed'; ctx.font = 'bold 13px system-ui, -apple-system, Segoe UI, Roboto, Arial';
       ctx.fillText('Time Since Creation', W/2-60, H-6);
-      ctx.save(); ctx.translate(12, H/2+20); ctx.rotate(-Math.PI/2); ctx.fillText(yAxisLabel || 'Unique Views', 0,0); ctx.restore();
+      ctx.save(); ctx.translate(12, H/2+20); ctx.rotate(-Math.PI/2); ctx.fillText(yAxisLabel || 'Viewers', 0,0); ctx.restore();
     }
     // Interpolate/extrapolate value for a series at a given x (time)
     function getValueAtX(series, x){
@@ -2746,6 +3456,9 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     let drag=null;
     let dragRaf = 0;
     let lastDragPos = null;
+    let dragMoved = false;
+    let lastDragTs = 0;
+    const dragClickThreshold = 4;
 
     function updateDragFromEvent(e){
       if (!drag || !e) return;
@@ -2759,6 +3472,11 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         const my = (lastDragPos.y - rect.top) * (canvas.height / rect.height) / DPR;
         drag.x1 = mx;
         drag.y1 = my;
+        const dx = mx - drag.x0;
+        const dy = my - drag.y0;
+        if (!dragMoved && Math.hypot(dx, dy) > dragClickThreshold) {
+          dragMoved = true;
+        }
         state.comparisonLine = null;
         draw();
         drawDragRect(drag);
@@ -2771,7 +3489,9 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     let lastDblClickTs = 0;
     canvas.addEventListener('dblclick', ()=>{ lastDblClickTs = Date.now(); state.zoomX=null; state.zoomY=null; draw(); });
     canvas.addEventListener('click', (e)=>{
-      if (Date.now() - lastDblClickTs < 250) return;
+      const now = Date.now();
+      if (now - lastDblClickTs < 250) return;
+      if (now - lastDragTs < 250) return;
       if (state.hover && state.hover.url) {
         window.open(state.hover.url,'_blank');
         return;
@@ -2786,19 +3506,22 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       }
     });
     canvas.addEventListener('mousedown',(e)=>{
-      const rect=canvas.getBoundingClientRect(); let x0=(e.clientX-rect.left)*(canvas.width/rect.width)/DPR; let y0=(e.clientY-rect.top)*(canvas.height/rect.height)/DPR; drag={x0,y0,x1:null,y1:null};
+      const rect=canvas.getBoundingClientRect(); let x0=(e.clientX-rect.left)*(canvas.width/rect.width)/DPR; let y0=(e.clientY-rect.top)*(canvas.height/rect.height)/DPR; dragMoved=false; drag={x0,y0,x1:null,y1:null};
     });
     window.addEventListener('mouseup',(e)=>{
-      if (!drag) return; const rect=canvas.getBoundingClientRect(); let x1=(e.clientX-rect.left)*(canvas.width/rect.width)/DPR; let y1=(e.clientY-rect.top)*(canvas.height/rect.height)/DPR;
+      if (!drag) return; const rect=canvas.getBoundingClientRect(); let x1=(e.clientX-rect.left)*(canvas.width/rect.width)/DPR; let y1=(e.clientY-rect.top)*(canvas.height/rect.height)/DPR; const dx=x1-drag.x0; const dy=y1-drag.y0; const didDrag=dragMoved||Math.hypot(dx, dy)>dragClickThreshold;
       const [cx0,cy0]=clampToPlot(drag.x0,drag.y0); const [cx1,cy1]=clampToPlot(x1,y1);
-      drag.x1=cx1; drag.y1=cy1; const minW=10,minH=10; const w=Math.abs(cx1-cx0), h=Math.abs(cy1-cy0);
+      drag.x1=cx1; drag.y1=cy1; const minW=10,minH=10; const w=Math.abs(cx1-cx0), h=Math.abs(cy1-cy0); if (didDrag) lastDragTs=Date.now();
       if (w>minW && h>minH){ const [X0,X1]=[cx0,cx1].sort((a,b)=>a-b); const [Y0,Y1]=[cy0,cy1].sort((a,b)=>a-b);
         const invMapX=(px)=>{ const [a,b]=(state.zoomX||state.x); return a + ((px-M.left)/(W-(M.left+M.right)))*(b-a); };
         const invMapY=(py)=>{ const [a,b]=(state.zoomY||state.y); return a + (((H-M.bottom)-py)/(H-(M.top+M.bottom)))*(b-a); };
         state.zoomX=[invMapX(X0),invMapX(X1)]; state.zoomY=[invMapY(Y1),invMapY(Y0)]; }
-      drag=null; draw(); showTooltip(null);
+      dragMoved=false; drag=null; draw(); showTooltip(null);
     });
-    function drawDragRect(d){ if (!d||d.x1==null||d.y1==null) return; ctx.save(); ctx.strokeStyle='#7dc4ff'; ctx.fillStyle='#7dc4ff22'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+    function drawDragRect(d){
+      if (!d||d.x1==null||d.y1==null) return;
+      const dragColors = getChartDragColors();
+      ctx.save(); ctx.strokeStyle=dragColors.stroke; ctx.fillStyle=dragColors.fill; ctx.lineWidth=1; ctx.setLineDash([4,3]);
       const x0=Math.max(M.left,Math.min(W-M.right,d.x0)); const y0=Math.max(M.top,Math.min(H-M.bottom,d.y0)); const x1=Math.max(M.left,Math.min(W-M.right,d.x1)); const y1=Math.max(M.top,Math.min(H-M.bottom,d.y1));
       const x=Math.min(x0,x1), y=Math.min(y0,y1), w=Math.abs(x1-x0), h=Math.abs(y1-y0); ctx.strokeRect(x,y,w,h); ctx.fillRect(x,y,w,h); ctx.restore(); }
     function drawComparisonLine(){
@@ -2837,8 +3560,8 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     
     function drawSeries(){
       const muted='#38424c'; const anyHover=!!state.hoverSeries;
-      for (const s of state.series){ const color=(anyHover && state.hoverSeries!==s.id)?muted:s.color; if (s.points.length>1){ ctx.strokeStyle=color; ctx.lineWidth=1.4; ctx.beginPath();
-        for (let i=0;i<s.points.length;i++){ const p=s.points[i]; const x=mapX(p.x), y=mapY(p.y); if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);} ctx.stroke(); }
+      for (const s of state.series){ const color=(anyHover && state.hoverSeries!==s.id)?muted:s.color; if (s.points.length>1){ ctx.strokeStyle=color; ctx.lineWidth=1.4; ctx.lineJoin='round'; ctx.lineCap='round';
+        if (drawSmoothLine(ctx, s.points, mapX, mapY)) ctx.stroke(); }
         for (const p of s.points){ const x=mapX(p.x), y=mapY(p.y); const isHover=state.hover && state.hover.pid===s.id && state.hover.i===p.t; ctx.fillStyle=color; ctx.beginPath(); ctx.arc(x,y,isHover?4.2:2.4,0,Math.PI*2); ctx.fill(); if (isHover){ ctx.strokeStyle='#ffffffaa'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.stroke(); } }
       }
     }
@@ -2913,7 +3636,25 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     function mapX(x){ const [a,b]=(state.zoomX||state.x); return M.left + ((x-a)/(b-a||1))*(W-(M.left+M.right)); }
     function mapY(y){ const [a,b]=(state.zoomY||state.y); return H - M.bottom - ((y-a)/(b-a||1))*(H-(M.top+M.bottom)); }
     function clampToPlot(px,py){ const x=Math.max(M.left,Math.min(W-M.right,px)); const y=Math.max(M.top,Math.min(H-M.bottom,py)); return [x,y]; }
-    function grid(){ ctx.strokeStyle='#25303b'; ctx.lineWidth=1; ctx.setLineDash([4,4]); for (let i=0;i<6;i++){ const x=M.left+i*(W-(M.left+M.right))/5; ctx.beginPath(); ctx.moveTo(x,M.top); ctx.lineTo(x,H-M.bottom); ctx.stroke(); } for (let i=0;i<6;i++){ const y=M.top+i*(H-(M.top+M.bottom))/5; ctx.beginPath(); ctx.moveTo(M.left,y); ctx.lineTo(W-M.right,y); ctx.stroke(); } ctx.setLineDash([]); }
+    function grid(){
+      const gridColor = getChartGridColor();
+      ctx.strokeStyle = gridColor; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+      for (let i=0;i<6;i++){
+        const x = M.left + i * (W - (M.left + M.right)) / 5;
+        ctx.beginPath();
+        ctx.moveTo(x, M.top);
+        ctx.lineTo(x, H - M.bottom);
+        ctx.stroke();
+      }
+      for (let i=0;i<6;i++){
+        const y = M.top + i * (H - (M.top + M.bottom)) / 5;
+        ctx.beginPath();
+        ctx.moveTo(M.left, y);
+        ctx.lineTo(W - M.right, y);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+    }
     function fmtDate(t){ try { const d=new Date(t); return d.toLocaleDateString(undefined,{month:'short',day:'2-digit'}); } catch { return String(t); } }
     function fmtDateTime(t){ try { const d=new Date(t); const ds=d.toLocaleDateString(undefined,{month:'short',day:'2-digit'}); const ts=d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'}); return ds+" "+ts; } catch { return String(t);} }
     function axes(){
@@ -2970,12 +3711,8 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       for (const s of state.series){
         const color=(anyHover && state.hoverSeries!==s.id)?muted:s.color;
         if (s.points.length>1){
-          ctx.strokeStyle=color||'#ffd166'; ctx.lineWidth=1.6; ctx.beginPath();
-          for (let i=0;i<s.points.length;i++){
-            const p=s.points[i]; const x=mapX(p.x), y=mapY(p.y);
-            if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-          }
-          ctx.stroke();
+          ctx.strokeStyle=color||'#ffd166'; ctx.lineWidth=1.6; ctx.lineJoin='round'; ctx.lineCap='round';
+          if (drawSmoothLine(ctx, s.points, mapX, mapY)) ctx.stroke();
         }
         for (const p of s.points){
           const x=mapX(p.x), y=mapY(p.y);
@@ -3192,6 +3929,9 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     let drag=null;
     let dragRaf = 0;
     let lastDragPos = null;
+    let dragMoved = false;
+    let lastDragTs = 0;
+    const dragClickThreshold = 4;
 
     function updateDragFromEvent(e){
       if (!drag || !e) return;
@@ -3205,6 +3945,11 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         const my = (lastDragPos.y - rect.top) * (canvas.height / rect.height) / DPR;
         drag.x1 = mx;
         drag.y1 = my;
+        const dx = mx - drag.x0;
+        const dy = my - drag.y0;
+        if (!dragMoved && Math.hypot(dx, dy) > dragClickThreshold) {
+          dragMoved = true;
+        }
         state.comparisonLine = null;
         draw();
         drawDragRect(drag);
@@ -3214,12 +3959,19 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     canvas.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mousemove', (e)=>{ if (drag) updateDragFromEvent(e); });
     canvas.addEventListener('mouseleave', ()=>{ rafPending = null; lastHover = null; state.hover=null; state.hoverSeries=null; state.comparisonLine=null; if (hoverCb) hoverCb(null); draw(); if (drag) drawDragRect(drag); showTooltip(null); });
-    canvas.addEventListener('mousedown',(e)=>{ const rect=canvas.getBoundingClientRect(); let x0=(e.clientX-rect.left)*(canvas.width/rect.width)/DPR; let y0=(e.clientY-rect.top)*(canvas.height/rect.height)/DPR; drag={x0,y0,x1:null,y1:null}; });
-    window.addEventListener('mouseup',(e)=>{ if (!drag) return; const rect=canvas.getBoundingClientRect(); let x1=(e.clientX-rect.left)*(canvas.width/rect.width)/DPR; let y1=(e.clientY-rect.top)*(canvas.height/rect.height)/DPR; const [cx0,cy0]=clampToPlot(drag.x0,drag.y0); const [cx1,cy1]=clampToPlot(x1,y1); drag.x1=cx1; drag.y1=cy1; const minW=10,minH=10; const w=Math.abs(cx1-cx0), h=Math.abs(cy1-cy0); if (w>minW && h>minH){ const [X0,X1]=[cx0,cx1].sort((a,b)=>a-b); const [Y0,Y1]=[cy0,cy1].sort((a,b)=>a-b); const invMapX=(px)=>{ const [a,b]=(state.zoomX||state.x); return a + ((px-M.left)/(W-(M.left+M.right)))*(b-a); }; const invMapY=(py)=>{ const [a,b]=(state.zoomY||state.y); return a + (((H-M.bottom)-py)/(H-(M.top+M.bottom)))*(b-a); }; state.zoomX=[invMapX(X0),invMapX(X1)]; state.zoomY=[invMapY(Y1),invMapY(Y0)]; } drag=null; draw(); showTooltip(null); });
-    function drawDragRect(d){ if (!d||d.x1==null||d.y1==null) return; ctx.save(); ctx.strokeStyle='#7dc4ff'; ctx.fillStyle='#7dc4ff22'; ctx.lineWidth=1; ctx.setLineDash([4,3]); const x0=Math.max(M.left,Math.min(W-M.right,d.x0)); const y0=Math.max(M.top,Math.min(H-M.bottom,d.y0)); const x1=Math.max(M.left,Math.min(W-M.right,d.x1)); const y1=Math.max(M.top,Math.min(H-M.bottom,d.y1)); const x=Math.min(x0,x1), y=Math.min(y0,y1), w=Math.abs(x1-x0), h=Math.abs(y1-y0); ctx.strokeRect(x,y,w,h); ctx.fillRect(x,y,w,h); ctx.restore(); }
+    canvas.addEventListener('mousedown',(e)=>{ const rect=canvas.getBoundingClientRect(); let x0=(e.clientX-rect.left)*(canvas.width/rect.width)/DPR; let y0=(e.clientY-rect.top)*(canvas.height/rect.height)/DPR; dragMoved=false; drag={x0,y0,x1:null,y1:null}; });
+    window.addEventListener('mouseup',(e)=>{ if (!drag) return; const rect=canvas.getBoundingClientRect(); let x1=(e.clientX-rect.left)*(canvas.width/rect.width)/DPR; let y1=(e.clientY-rect.top)*(canvas.height/rect.height)/DPR; const dx=x1-drag.x0; const dy=y1-drag.y0; const didDrag=dragMoved||Math.hypot(dx, dy)>dragClickThreshold; const [cx0,cy0]=clampToPlot(drag.x0,drag.y0); const [cx1,cy1]=clampToPlot(x1,y1); drag.x1=cx1; drag.y1=cy1; const minW=10,minH=10; const w=Math.abs(cx1-cx0), h=Math.abs(cy1-cy0); if (didDrag) lastDragTs=Date.now(); if (w>minW && h>minH){ const [X0,X1]=[cx0,cx1].sort((a,b)=>a-b); const [Y0,Y1]=[cy0,cy1].sort((a,b)=>a-b); const invMapX=(px)=>{ const [a,b]=(state.zoomX||state.x); return a + ((px-M.left)/(W-(M.left+M.right)))*(b-a); }; const invMapY=(py)=>{ const [a,b]=(state.zoomY||state.y); return a + (((H-M.bottom)-py)/(H-(M.top+M.bottom)))*(b-a); }; state.zoomX=[invMapX(X0),invMapX(X1)]; state.zoomY=[invMapY(Y1),invMapY(Y0)]; } dragMoved=false; drag=null; draw(); showTooltip(null); });
+    function drawDragRect(d){
+      if (!d||d.x1==null||d.y1==null) return;
+      const dragColors = getChartDragColors();
+      ctx.save(); ctx.strokeStyle=dragColors.stroke; ctx.fillStyle=dragColors.fill; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+      const x0=Math.max(M.left,Math.min(W-M.right,d.x0)); const y0=Math.max(M.top,Math.min(H-M.bottom,d.y0)); const x1=Math.max(M.left,Math.min(W-M.right,d.x1)); const y1=Math.max(M.top,Math.min(H-M.bottom,d.y1));
+      const x=Math.min(x0,x1), y=Math.min(y0,y1), w=Math.abs(x1-x0), h=Math.abs(y1-y0); ctx.strokeRect(x,y,w,h); ctx.fillRect(x,y,w,h); ctx.restore();
+    }
     canvas.addEventListener('dblclick', ()=>{ state.zoomX=null; state.zoomY=null; draw(); });
     canvas.addEventListener('click', (e)=>{
       if (drag) return;
+      if (Date.now() - lastDragTs < 250) return;
       if (state.hover && state.hover.url) {
         window.open(state.hover.url, '_blank');
         return;
@@ -3705,7 +4457,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       }
 
       // Save merged metrics
-      await chrome.storage.local.set({ metrics });
+      await saveMetrics(metrics, { userKeys: Object.keys(metrics.users || {}) });
       
       // Show success message with stats
       const message = `Import completed!\n\n` +
@@ -3968,12 +4720,32 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     }
   }
 
-  async function main(){
+  async function main(prefetchedCache){
+    const perfBoot = perfStart('boot total');
     initSidebarResizer();
     initThemePicker();
     hoistChartTooltips();
-    metrics = await loadMetrics();
-    let ultraModeEnabled = await loadUltraModePreference();
+    const cached = prefetchedCache !== undefined ? prefetchedCache : loadInstantCache();
+    if (cached) {
+      metrics = { users: { [cached.userKey]: cached.user } };
+      usersIndex = cached.usersIndex;
+      currentUserKey = cached.userKey;
+      lastMetricsUpdatedAt = cached.metricsUpdatedAt || 0;
+      isMetricsPartial = true;
+    } else {
+      const perfLoad = perfStart('load metrics');
+      metrics = await loadMetrics();
+      perfEnd(perfLoad);
+      isMetricsPartial = false;
+    }
+    const perfUltra = perfStart('load ultra mode');
+    let ultraModeEnabled = false;
+    const ultraModePromise = loadUltraModePreference()
+      .then((val)=>{
+        ultraModeEnabled = val;
+      })
+      .catch(() => {});
+    perfEnd(perfUltra);
     const modeTapEl = $('#dashboardModeTap');
     if (modeTapEl) {
       let tapCount = 0;
@@ -3992,115 +4764,33 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       });
     }
     // Build list and try to restore last user
-    let currentUserKey = buildUserOptions(metrics);
+    const defaultUserKey = buildUserOptions(metrics);
+    if (!currentUserKey) currentUserKey = defaultUserKey;
     const searchInput = $('#search');
     const suggestions = $('#suggestions');
     let zoomStates = {};
     let customVisibilityByUser = {};
     let customFiltersByUser = {};
     let customFiltersReloaded = false;
+    let lastFilterAction = (function(){
+      try { return sessionStorage.getItem('sctLastFilterAction') || null; } catch { return null; }
+    })();
     const sessionCustomFiltersByUser = (function(){
       try { return JSON.parse(sessionStorage.getItem('customFiltersByUserSession') || '{}'); } catch { return {}; }
     })();
     const localCustomFiltersByUser = (function(){
       try { return JSON.parse(localStorage.getItem('sctCustomFiltersByUser') || '{}'); } catch { return {}; }
     })();
-    try {
-      const st = await chrome.storage.local.get(['lastUserKey', 'zoomStates', 'customVisibilityByUser', 'customFiltersByUser', 'lastFilterAction']);
-      if (st.lastUserKey && (metrics.users[st.lastUserKey] || isTopTodayKey(st.lastUserKey))) currentUserKey = st.lastUserKey;
-      zoomStates = st.zoomStates || {};
-      if (st.lastFilterAction && !lastFilterAction) lastFilterAction = st.lastFilterAction;
-      customVisibilityByUser = (function(raw){
-        const out = {};
-        if (!raw || typeof raw !== 'object') return out;
-        for (const [userKey, entry] of Object.entries(raw)){
-          if (Array.isArray(entry)) out[userKey] = { ids: entry };
-          else if (entry && typeof entry === 'object'){
-            const ids = Array.isArray(entry.ids) ? entry.ids : [];
-            out[userKey] = { ids };
-          }
-        }
-        return out;
-      })(st.customVisibilityByUser);
-      const storageFilters = (function(raw){
-        const out = {};
-        if (!raw || typeof raw !== 'object') return out;
-        for (const [userKey, entry] of Object.entries(raw)){
-          const filters = Array.isArray(entry?.filters) ? entry.filters : [];
-          const normalized = [];
-          for (const f of filters){
-            if (!f || typeof f !== 'object') continue;
-            const id = typeof f.id === 'string' && f.id ? f.id : null;
-            const name = typeof f.name === 'string' && f.name ? f.name : null;
-            const ids = Array.isArray(f.ids) ? f.ids.filter(Boolean) : [];
-            if (!id || !name) continue;
-            normalized.push({ id, name, ids });
-          }
-          out[userKey] = { filters: normalized };
-        }
-        return out;
-      })(st.customFiltersByUser);
-      const sessionFilters = (function(raw){
-        const out = {};
-        if (!raw || typeof raw !== 'object') return out;
-        for (const [userKey, entry] of Object.entries(raw)){
-          const filters = Array.isArray(entry?.filters) ? entry.filters : [];
-          const normalized = [];
-          for (const f of filters){
-            if (!f || typeof f !== 'object') continue;
-            const id = typeof f.id === 'string' && f.id ? f.id : null;
-            const name = typeof f.name === 'string' && f.name ? f.name : null;
-            const ids = Array.isArray(f.ids) ? f.ids.filter(Boolean) : [];
-            if (!id || !name) continue;
-            normalized.push({ id, name, ids });
-          }
-          out[userKey] = { filters: normalized };
-        }
-        return out;
-      })(sessionCustomFiltersByUser);
-      const localFilters = (function(raw){
-        const out = {};
-        if (!raw || typeof raw !== 'object') return out;
-        for (const [userKey, entry] of Object.entries(raw)){
-          const filters = Array.isArray(entry?.filters) ? entry.filters : [];
-          const normalized = [];
-          for (const f of filters){
-            if (!f || typeof f !== 'object') continue;
-            const id = typeof f.id === 'string' && f.id ? f.id : null;
-            const name = typeof f.name === 'string' && f.name ? f.name : null;
-            const ids = Array.isArray(f.ids) ? f.ids.filter(Boolean) : [];
-            if (!id || !name) continue;
-            normalized.push({ id, name, ids });
-          }
-          out[userKey] = { filters: normalized };
-        }
-        return out;
-      })(localCustomFiltersByUser);
-      customFiltersByUser = storageFilters;
-      for (const [userKey, entry] of Object.entries(sessionFilters)){
-        const existing = storageFilters[userKey];
-        const existingCount = Array.isArray(existing?.filters) ? existing.filters.length : 0;
-        const sessionCount = Array.isArray(entry?.filters) ? entry.filters.length : 0;
-        if (!existing || sessionCount > existingCount) {
-          customFiltersByUser[userKey] = entry;
-        }
-      }
-      for (const [userKey, entry] of Object.entries(localFilters)){
-        const existing = customFiltersByUser[userKey];
-        const existingCount = Array.isArray(existing?.filters) ? existing.filters.length : 0;
-        const localCount = Array.isArray(entry?.filters) ? entry.filters.length : 0;
-        if (!existing || localCount > existingCount) {
-          customFiltersByUser[userKey] = entry;
-        }
-      }
-    } catch {}
+    const prefsPromise = chrome.storage.local
+      .get(['lastUserKey', 'zoomStates', 'customVisibilityByUser', 'customFiltersByUser', 'lastFilterAction'])
+      .catch(() => ({}));
     syncUserSelectionUI();
-    let viewsChartType = 'unique'; // 'unique' or 'total'
-    const compareViewsChartType = 'total'; // Always use total views for compare section
-    let chart = makeChart($('#chart'), 'Unique viewers', 'Unique');
+    let viewsChartType = 'total'; // 'unique' or 'total'
+    let compareViewsChartType = 'total';
+    let chart = makeChart($('#chart'), 'Viewers', 'Viewers');
     let viewsPerPersonChart = makeFirst24HoursChart($('#viewsPerPersonChart'), '#viewsPerPersonTooltip', 'Views Per Person', (v) => Number(v).toFixed(2));
-    let viewsChart = makeTimeChart($('#viewsChart'), '#viewsTooltip', 'Unique Views', fmt);
-    let first24HoursChart = makeFirst24HoursChart($('#first24HoursChart'), '#first24HoursTooltip', 'Unique Views', fmt);
+    let viewsChart = makeTimeChart($('#viewsChart'), '#viewsTooltip', 'Viewers', fmt);
+    let first24HoursChart = makeFirst24HoursChart($('#first24HoursChart'), '#first24HoursTooltip', 'Viewers', fmt);
     const followersChart = makeFollowersChart($('#followersChart'));
     let allViewsChart = makeTimeChart($('#allViewsChart'), '#allViewsTooltip', 'Total Views', fmt2);
     const allLikesChart = makeTimeChart($('#allLikesChart'), '#allLikesTooltip', 'Likes', fmt2);
@@ -4109,9 +4799,6 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     const visibleSet = new Set();
     const sessionCustomVisibilityByUser = (function(){
       try { return JSON.parse(sessionStorage.getItem('customVisibilityByUserSession') || '{}'); } catch { return {}; }
-    })();
-    let lastFilterAction = (function(){
-      try { return sessionStorage.getItem('sctLastFilterAction') || null; } catch { return null; }
     })();
     function normalizeFilterAction(action){
       if (!action) return null;
@@ -4359,12 +5046,13 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
             postTime: getPostTimeStrict(p) || 0,
             pidBI: pidBigInt(pid)
           };
-        });
-        const sorted = mapped.sort((a,b)=>{
-          const dl = b.likes - a.likes;
-          if (dl !== 0) return dl;
-          const dv = b.views - a.views;
-          if (dv !== 0) return dv;
+      });
+      const sorted = mapped.sort((a,b)=>{
+        if (!a || !b) return !a && !b ? 0 : (!a ? 1 : -1);
+        const dl = b.likes - a.likes;
+        if (dl !== 0) return dl;
+        const dv = b.views - a.views;
+        if (dv !== 0) return dv;
           const dt = (b.postTime || 0) - (a.postTime || 0);
           if (dt !== 0) return dt;
           if (a.pidBI === b.pidBI) return b.pid.localeCompare(a.pid);
@@ -4591,28 +5279,22 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       if (!container) return;
       container.innerHTML = '';
       const users = Array.from(compareUsers);
+      setCompareNextColor(getCompareSeriesColor(users.length));
       users.forEach((userKey, idx)=>{
         const user = resolveUserForKey(metrics, userKey);
         const handle = user?.handle || (isTopTodayKey(userKey) ? 'Top Today' : userKey);
-        const color = getCompareSeriesColor(idx);
         const pill = document.createElement('div');
         pill.className = 'compare-pill';
         pill.dataset.userKey = userKey;
-        pill.style.background = color;
-        pill.style.borderColor = color;
         const nameSpan = document.createElement('span');
         nameSpan.className = 'compare-pill-name';
         nameSpan.textContent = handle;
-        nameSpan.style.color = '#fff';
         const removeBtn = document.createElement('span');
         removeBtn.className = 'compare-pill-remove';
         removeBtn.textContent = '×';
-        removeBtn.style.opacity = '1';
-        removeBtn.style.pointerEvents = 'auto';
-        removeBtn.style.color = '#fff';
-        removeBtn.style.textShadow = '0 1px 2px rgba(0,0,0,0.5)';
-        removeBtn.onclick = (e)=>{
-          e.stopPropagation();
+        removeBtn.style.backgroundColor = getCompareSeriesColor(idx);
+        pill.title = 'Remove';
+        pill.onclick = ()=>{
           compareUsers.delete(userKey);
           // If compare section becomes empty, add current user to show who we're looking at
           if (compareUsers.size === 0 && currentUserKey && resolveUserForKey(metrics, currentUserKey)){
@@ -4641,7 +5323,14 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     }
 
     function addCompareUser(userKey){
+      if (isTopTodayKey(userKey)) return;
       if (compareUsers.size >= MAX_COMPARE_USERS) return;
+      if (isMetricsPartial && !resolveUserForKey(metrics, userKey)) {
+        refreshData({ skipPostListRebuild: false, skipRestoreZoom: true })
+          .then(() => addCompareUser(userKey))
+          .catch((err) => console.error('[Dashboard] compare hydrate failed', err));
+        return;
+      }
       if (!resolveUserForKey(metrics, userKey)) return;
       if (compareUsers.has(userKey)) return;
       compareUsers.add(userKey);
@@ -4694,12 +5383,12 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
             const profileUrl = handle ? `${SITE_ORIGIN}/profile/${handle}` : null;
             const isTopToday = isTopTodayKey(userKey);
             const label = isTopToday
-              ? (useUnique ? 'Top Today • Unique Views' : 'Top Today • Total Views')
-              : (useUnique ? `@${handle}'s Unique Views` : `@${handle}'s Total Views`);
+              ? (useUnique ? 'Top Today • Viewers' : 'Top Today • Total Views')
+              : (useUnique ? `@${handle}'s Viewers` : `@${handle}'s Total Views`);
             allSeries.push({ id: userKey, label, color, points: pts, profileUrl: isTopToday ? null : profileUrl });
           }
         });
-        const yAxisLabel = useUnique ? 'Unique Views' : 'Total Views';
+        const yAxisLabel = useUnique ? 'Viewers' : 'Total Views';
         allViewsChart.setYAxisLabel(yAxisLabel);
         allViewsChart.setData(allSeries);
       } catch {}
@@ -4822,7 +5511,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     try {
       window.addEventListener('sct-theme-change', ()=>{
         renderComparePills();
-        updateCompareCharts();
+        refreshUserUI({ preserveEmpty: true, skipPostListRebuild: true, skipRestoreZoom: true });
       });
     } catch {}
 
@@ -4830,251 +5519,564 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     // Function to calculate best time to post for LIKES from ALL users' data
     function calculateBestPostTimeForLikes(){
       if (!metrics || !metrics.users) return { year: null, month: null, week: null };
-      
+
       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const now = Date.now();
+      const MS_PER_DAY = 24 * 60 * 60 * 1000;
+      const MS_48H = 48 * 60 * 60 * 1000;
+
       const HEATMAP_START_HOUR = 0;
       const HEATMAP_END_HOUR = 24;
       const HEATMAP_BUCKETS = HEATMAP_END_HOUR - HEATMAP_START_HOUR;
 
-      function buildHeatmap(daysBack){
-        const cutoffTime = now - (daysBack * 24 * 60 * 60 * 1000);
-        const matrix = Array.from({ length: 7 }, () => Array(HEATMAP_BUCKETS).fill(0));
-        for (const [, user] of Object.entries(metrics.users||{})){
-          for (const [, p] of Object.entries(user.posts||{})){
-            const postTime = getPostTimeStrict(p);
-            if (!postTime || postTime < cutoffTime) continue;
-            const windowEndTime = postTime + (24 * 60 * 60 * 1000);
-            let maxLikes = 0;
-            for (const s of (p.snapshots||[])){
-              if (s.t <= windowEndTime && s.likes != null){
-                maxLikes = Math.max(maxLikes, Number(s.likes));
-              }
-            }
-            if (maxLikes <= 0) continue;
-            const postDate = new Date(postTime);
-            const hour = postDate.getHours();
-            const day = postDate.getDay();
-            const col = hour - HEATMAP_START_HOUR;
-            matrix[day][col] += maxLikes;
-          }
-        }
-        let max = 0;
-        for (const row of matrix){
-          for (const v of row) max = Math.max(max, v);
-        }
-        return { matrix, max };
+      const bucketSizeMinutes = 15;
+
+      const cutoffs = {
+        year: now - 365 * MS_PER_DAY,
+        month: now - 30 * MS_PER_DAY,
+        week: now - 7 * MS_PER_DAY
+      };
+
+      const clamp = (v, lo, hi) => (v < lo ? lo : (v > hi ? hi : v));
+
+      // Cache per run
+      const followerSeriesCache = new Map(); // userKey -> [{t,count}] sorted asc
+      const likes48Cache = (typeof WeakMap !== 'undefined') ? new WeakMap() : null;
+
+      function getFollowerSeries(userKey, user){
+        let series = followerSeriesCache.get(userKey);
+        if (series) return series;
+
+        const arr = Array.isArray(user?.followers) ? user.followers : [];
+        series = arr
+          .map(it => ({ t: toTs(it?.t), count: Number(it?.count) }))
+          .filter(it => isFinite(it.t) && it.t > 0 && isFinite(it.count) && it.count > 0)
+          .sort((a, b) => a.t - b.t);
+
+        followerSeriesCache.set(userKey, series);
+        return series;
       }
-      
-      function calculateBestTimeForRange(daysBack){
-        const cutoffTime = now - (daysBack * 24 * 60 * 60 * 1000);
-        const timeStats = new Map();
-        const timeWindowMinutes = 1440;
-        const bucketSizeMinutes = 15;
-        let totalPostsUsed = 0;
-        
-        for (const [userKey, user] of Object.entries(metrics.users||{})){
-          for (const [pid, p] of Object.entries(user.posts||{})){
-            const postTime = getPostTimeStrict(p);
-            if (!postTime || postTime < cutoffTime) continue;
-            
-            const windowEndTime = postTime + (timeWindowMinutes * 60 * 1000);
-            let maxLikes = 0;
-            for (const s of (p.snapshots||[])){
-              if (s.t <= windowEndTime && s.likes != null){
-                maxLikes = Math.max(maxLikes, Number(s.likes));
-              }
+
+      // Nearest follower count to postTime (binary search in sorted series)
+      function getFollowersAtTime(userKey, user, postTime){
+        const series = getFollowerSeries(userKey, user);
+        if (!series.length) return 0;
+
+        let lo = 0, hi = series.length - 1, idx = -1;
+        while (lo <= hi) {
+          const mid = (lo + hi) >> 1;
+          if (series[mid].t <= postTime) { idx = mid; lo = mid + 1; }
+          else { hi = mid - 1; }
+        }
+
+        const before = idx >= 0 ? series[idx] : null;
+        const after = (idx + 1) < series.length ? series[idx + 1] : null;
+
+        if (!before) return after ? after.count : 0;
+        if (!after) return before.count;
+
+        const dtBefore = Math.abs(postTime - before.t);
+        const dtAfter = Math.abs(after.t - postTime);
+        return (dtAfter < dtBefore) ? after.count : before.count;
+      }
+
+      // Prefer likes at (>= postTime + 48h) if we have a snapshot at/after that time.
+      // Fallback: if post is older than 48h but we don't have an after-48h snapshot, use max likes seen.
+      function getLikesAt48h(post, postTime){
+        if (!post || !postTime) return 0;
+
+        if (likes48Cache) {
+          const cached = likes48Cache.get(post);
+          if (cached != null) return cached;
+        }
+
+        const snaps = Array.isArray(post?.snapshots) ? post.snapshots : [];
+        if (!snaps.length) {
+          if (likes48Cache) likes48Cache.set(post, 0);
+          return 0;
+        }
+
+        const t48 = postTime + MS_48H;
+
+        let bestAfterT = Infinity;
+        let bestAfterLikes = null;
+
+        let maxLikes = 0;
+        let sawAnyLikes = false;
+
+        for (const s of snaps){
+          const t = toTs(s?.t);
+          const l = Number(s?.likes);
+          if (!Number.isFinite(l)) continue;
+
+          sawAnyLikes = true;
+          if (l > maxLikes) maxLikes = l;
+
+          if (t && t >= t48 && t < bestAfterT) {
+            bestAfterT = t;
+            bestAfterLikes = l;
+          }
+        }
+
+        let out = 0;
+        if (bestAfterLikes != null) out = bestAfterLikes;
+        else if (now >= t48 && sawAnyLikes) out = maxLikes;
+        else out = 0;
+
+        if (likes48Cache) likes48Cache.set(post, out);
+        return out;
+      }
+
+      // Weighted quantiles over discrete time buckets (no per-post times array)
+      function weightedQuantile(sortedEntries, totalCount, q){
+        if (!sortedEntries.length || totalCount <= 0) return null;
+        const target = q * totalCount;
+        let acc = 0;
+        for (const e of sortedEntries){
+          acc += e.count;
+          if (acc >= target) return e;
+        }
+        return sortedEntries[sortedEntries.length - 1] || null;
+      }
+      function weightedQuantileContinuous(sortedEntries, totalCount, q){
+        if (!sortedEntries.length || totalCount <= 0) return null;
+        const target = q * totalCount;
+        let acc = 0;
+        for (const e of sortedEntries){
+          const count = Number(e.count) || 0;
+          if (count <= 0) continue;
+          const next = acc + count;
+          if (next >= target) {
+            const frac = (target - acc) / count;
+            const clamped = Math.max(0, Math.min(1, frac));
+            return e.minutes + clamped * bucketSizeMinutes;
+          }
+          acc = next;
+        }
+        const last = sortedEntries[sortedEntries.length - 1];
+        return last ? last.minutes + bucketSizeMinutes : null;
+      }
+
+      function formatTime(hour, minute){
+        const hour12 = hour % 12 || 12;
+        const minuteStr = String(minute).padStart(2, '0');
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        return `${hour12}:${minuteStr} ${ampm}`;
+      }
+      function formatTimeRangeByMinutes(startMinutes, endMinutes){
+        const startClamped = Math.max(0, Math.min(1439, Math.floor(startMinutes)));
+        let endClamped = Math.max(0, Math.min(1439, Math.ceil(endMinutes)));
+        if (endClamped <= startClamped) endClamped = Math.min(1439, startClamped + 1);
+        const startHour = Math.floor(startClamped / 60) % 24;
+        const startMin = startClamped % 60;
+        const endHour = Math.floor(endClamped / 60) % 24;
+        const endMin = endClamped % 60;
+        return `${formatTime(startHour, startMin)} - ${formatTime(endHour, endMin)}`;
+      }
+
+      function buildRecommendation(buckets, totalPostsUsed){
+        if (!buckets || !buckets.length) return null;
+
+        // Build weighted distribution of (hour, minuteBucket) using bucket.count
+        const dist = buckets
+          .map(b => ({
+            hour: Number(b?.stats?.hour),
+            minute: Number(b?.stats?.minute),
+            count: Number(b?.count) || 0
+          }))
+          .filter(e => isFinite(e.hour) && isFinite(e.minute) && e.count > 0)
+          .map(e => ({ ...e, minutes: e.hour * 60 + e.minute }))
+          .sort((a, b) => a.minutes - b.minutes);
+
+        const totalCount = dist.reduce((s, e) => s + e.count, 0);
+        if (!dist.length || totalCount <= 0) return null;
+
+        const med = weightedQuantile(dist, totalCount, 0.50);
+        const q1 = weightedQuantile(dist, totalCount, 0.25);
+        const q3 = weightedQuantile(dist, totalCount, 0.75);
+        const medMinutes = weightedQuantileContinuous(dist, totalCount, 0.50);
+        const q1Minutes = weightedQuantileContinuous(dist, totalCount, 0.25);
+        const q3Minutes = weightedQuantileContinuous(dist, totalCount, 0.75);
+        if (!med || !q1 || !q3) return null;
+
+        const bestHour = med.hour;
+        const bestMinute = med.minute;
+        const recommendMinute = bestMinute < 30 ? 1 : 31;
+
+        let timeRangeStr;
+        if (totalCount <= 5) {
+          const startMinutes = Number.isFinite(medMinutes) ? medMinutes : (bestHour * 60 + bestMinute);
+          const endMinutes = startMinutes + bucketSizeMinutes;
+          timeRangeStr = formatTimeRangeByMinutes(startMinutes, endMinutes);
+        } else {
+          const rangeMinutes = (Number.isFinite(q3Minutes) && Number.isFinite(q1Minutes))
+            ? (q3Minutes - q1Minutes)
+            : (q3.minutes - q1.minutes);
+          if (rangeMinutes > 180) {
+            const medianMinutes = Number.isFinite(medMinutes) ? medMinutes : (bestHour * 60 + bestMinute);
+            const startMinutes = Math.max(0, medianMinutes - 60);
+            const endMinutes = Math.min(1439, medianMinutes + 60);
+            timeRangeStr = formatTimeRangeByMinutes(startMinutes, endMinutes);
+          } else {
+            const startMinutes = Number.isFinite(q1Minutes) ? q1Minutes : q1.minutes;
+            let endMinutes = Number.isFinite(q3Minutes) ? q3Minutes : q3.minutes;
+            if (endMinutes <= startMinutes) {
+              endMinutes = startMinutes + bucketSizeMinutes;
             }
-            
-            if (maxLikes > 0){
-              totalPostsUsed++;
-              const postDate = new Date(postTime);
-              const hour = postDate.getHours();
-              const minute = postDate.getMinutes();
-              const dayOfWeek = postDate.getDay();
-              
-              const minuteBucket = Math.floor(minute / bucketSizeMinutes) * bucketSizeMinutes;
-              const timeKey = `${hour}:${minuteBucket}`;
-              
-              if (!timeStats.has(timeKey)){
-                timeStats.set(timeKey, { 
-                  count: 0, 
-                  totalLikes: 0,
-                  dayOfWeek: new Map(),
-                  times: []
-                });
-              }
-              const stats = timeStats.get(timeKey);
-              stats.count++;
-              stats.totalLikes += maxLikes;
-              stats.times.push({ hour, minute, dayOfWeek });
-              
-              if (!stats.dayOfWeek.has(dayOfWeek)){
-                stats.dayOfWeek.set(dayOfWeek, 0);
-              }
-              stats.dayOfWeek.set(dayOfWeek, stats.dayOfWeek.get(dayOfWeek) + 1);
+            timeRangeStr = formatTimeRangeByMinutes(startMinutes, endMinutes);
+          }
+        }
+
+        const recommendTimeStr = formatTime(bestHour, recommendMinute);
+
+        const dayOfWeekMap = new Map();
+        for (const bucket of buckets) {
+          const m = bucket?.stats?.dayOfWeek;
+          if (!(m instanceof Map)) continue;
+          for (const [day, count] of m.entries()) {
+            dayOfWeekMap.set(day, (dayOfWeekMap.get(day) || 0) + count);
+          }
+        }
+
+        let bestDayOfWeek = null;
+        let bestDayCount = 0;
+        for (const [day, count] of dayOfWeekMap.entries()){
+          if (count > bestDayCount){
+            bestDayCount = count;
+            bestDayOfWeek = day;
+          }
+        }
+
+        const date = new Date();
+        date.setHours(bestHour, bestMinute, 0, 0);
+        const tzStr = date.toLocaleTimeString('en-US', { timeZoneName: 'short' }).split(' ').pop();
+
+        const dayStr = bestDayOfWeek != null ? dayNames[bestDayOfWeek] : '';
+        const postCount = buckets.reduce((sum, bucket)=> sum + (Number(bucket?.count) || 0), 0);
+        const liftValues = buckets
+          .map((bucket)=>{
+            const lift = Number(bucket?.lift);
+            if (Number.isFinite(lift)) return lift;
+            const score = Number(bucket?.score);
+            if (Number.isFinite(score)) return Math.exp(score);
+            return null;
+          })
+          .filter((v)=> Number.isFinite(v) && v > 0);
+        const expectedLift = liftValues.length ? Math.max(...liftValues) : null;
+
+        return {
+          timeStr: `${timeRangeStr} ${tzStr}`,
+          recommendTimeStr: `${recommendTimeStr} ${tzStr}`,
+          dayStr: dayStr ? ` on ${dayStr}` : '',
+          postCount,
+          totalPostsUsed,
+          bestHour,
+          bestMinute,
+          bestDayOfWeek,
+          expectedLift: Number.isFinite(expectedLift) ? expectedLift : null
+        };
+      }
+
+      // --- Model:
+      // y = log(1+likes48) ~ alpha + beta*log(1+followers) + time_bucket_effect
+      // time_bucket_effect is computed as residual and EB-shrunk toward 0
+      const rangeKeys = ['year', 'month', 'week'];
+
+      const reg = {
+        year: { n: 0, sumX: 0, sumY: 0, sumXX: 0, sumXY: 0 },
+        month: { n: 0, sumX: 0, sumY: 0, sumXX: 0, sumXY: 0 },
+        week: { n: 0, sumX: 0, sumY: 0, sumXX: 0, sumXY: 0 }
+      };
+
+      // First pass: regression sums (same post can feed multiple ranges)
+      for (const [userKey, user] of Object.entries(metrics.users || {})){
+        for (const [, p] of Object.entries(user.posts || {})){
+          const postTime = getPostTimeStrict(p);
+          if (!postTime || postTime < cutoffs.year) continue;
+
+          const likes48 = getLikesAt48h(p, postTime);
+          if (!(likes48 > 0)) continue;
+
+          const followers = getFollowersAtTime(userKey, user, postTime);
+          if (!(followers > 0)) continue;
+
+          const x = Math.log1p(followers);
+          const y = Math.log1p(likes48);
+          if (!isFinite(x) || !isFinite(y)) continue;
+
+          // year always (within cutoff)
+          {
+            const r = reg.year;
+            r.n++; r.sumX += x; r.sumY += y; r.sumXX += x * x; r.sumXY += x * y;
+          }
+          if (postTime >= cutoffs.month) {
+            const r = reg.month;
+            r.n++; r.sumX += x; r.sumY += y; r.sumXX += x * x; r.sumXY += x * y;
+          }
+          if (postTime >= cutoffs.week) {
+            const r = reg.week;
+            r.n++; r.sumX += x; r.sumY += y; r.sumXX += x * x; r.sumXY += x * y;
+          }
+        }
+      }
+
+      const model = { year: null, month: null, week: null };
+      for (const k of rangeKeys){
+        const r = reg[k];
+        if (!r || r.n <= 0) continue;
+
+        const n = r.n;
+        const meanX = r.sumX / n;
+        const meanY = r.sumY / n;
+
+        const denom = r.sumXX - n * meanX * meanX;
+        let beta = 1;
+        if (denom > 1e-9) {
+          beta = (r.sumXY - n * meanX * meanY) / denom;
+          if (!isFinite(beta)) beta = 1;
+        }
+        let alpha = meanY - beta * meanX;
+        if (!isFinite(alpha)) alpha = 0;
+
+        model[k] = { alpha, beta, n };
+      }
+
+      // Second pass: residual aggregation into:
+      // - time-of-day buckets (15-min)
+      // - day x hour heatmap buckets (1-hour)
+      const agg = {};
+      for (const k of rangeKeys){
+        agg[k] = {
+          totalPostsUsed: 0,
+          timeStats: new Map(), // key "H:minuteBucket" -> {count,sumRes,dayOfWeek:Map,hour,minute}
+          heatSum: Array.from({ length: 7 }, () => Array(HEATMAP_BUCKETS).fill(0)),
+          heatCount: Array.from({ length: 7 }, () => Array(HEATMAP_BUCKETS).fill(0)),
+          heatLikesSum: Array.from({ length: 7 }, () => Array(HEATMAP_BUCKETS).fill(0))
+        };
+      }
+
+      const RESID_CLIP = 3.0;
+
+      for (const [userKey, user] of Object.entries(metrics.users || {})){
+        for (const [, p] of Object.entries(user.posts || {})){
+          const postTime = getPostTimeStrict(p);
+          if (!postTime || postTime < cutoffs.year) continue;
+
+          const likes48 = getLikesAt48h(p, postTime);
+          if (!(likes48 > 0)) continue;
+
+          const followers = getFollowersAtTime(userKey, user, postTime);
+          if (!(followers > 0)) continue;
+
+          const x = Math.log1p(followers);
+          const y = Math.log1p(likes48);
+          if (!isFinite(x) || !isFinite(y)) continue;
+
+          const d = new Date(postTime);
+          const dayOfWeek = d.getDay();
+          const hour = d.getHours();
+          const minute = d.getMinutes();
+          const minuteBucket = Math.floor(minute / bucketSizeMinutes) * bucketSizeMinutes;
+          const col = hour - HEATMAP_START_HOUR;
+          if (dayOfWeek < 0 || dayOfWeek > 6) continue;
+          if (col < 0 || col >= HEATMAP_BUCKETS) continue;
+
+          const timeKey = `${hour}:${minuteBucket}`;
+
+          function addToRange(rangeKey){
+            const m = model[rangeKey];
+            if (!m) return;
+
+            let resid = y - (m.alpha + m.beta * x);
+            if (!isFinite(resid)) return;
+            resid = clamp(resid, -RESID_CLIP, RESID_CLIP);
+
+            const a = agg[rangeKey];
+            a.totalPostsUsed++;
+
+            // heatmap cell (day x hour)
+            a.heatSum[dayOfWeek][col] += resid;
+            a.heatCount[dayOfWeek][col] += 1;
+            a.heatLikesSum[dayOfWeek][col] += likes48;
+
+            // time-of-day bucket (15-min)
+            let stats = a.timeStats.get(timeKey);
+            if (!stats) {
+              stats = { count: 0, sumRes: 0, dayOfWeek: new Map(), hour, minute: minuteBucket };
+              a.timeStats.set(timeKey, stats);
+            }
+            stats.count++;
+            stats.sumRes += resid;
+            stats.dayOfWeek.set(dayOfWeek, (stats.dayOfWeek.get(dayOfWeek) || 0) + 1);
+          }
+
+          // year always
+          addToRange('year');
+          if (postTime >= cutoffs.month) addToRange('month');
+          if (postTime >= cutoffs.week) addToRange('week');
+        }
+      }
+
+      function finalizeRange(rangeKey){
+        const a = agg[rangeKey];
+        if (!a) return { primary: null, secondary: null, heatmap: { matrix: Array.from({ length: 7 }, ()=>Array(24).fill(0)), counts: Array.from({ length: 7 }, ()=>Array(24).fill(0)), avgLikes: Array.from({ length: 7 }, ()=>Array(24).fill(0)), max: 0, min: 0 } };
+
+        const totalPostsUsed = a.totalPostsUsed || 0;
+
+        // Prior strength for EB shrinkage (tuneable, capped)
+        const PRIOR = Math.max(20, Math.min(200, Math.round(totalPostsUsed / 500)));
+
+        // Heatmap: lift = exp( shrunk_residual )
+        const matrix = Array.from({ length: 7 }, ()=>Array(HEATMAP_BUCKETS).fill(0));
+        const avgLikes = Array.from({ length: 7 }, ()=>Array(HEATMAP_BUCKETS).fill(0));
+        let maxLift = 0;
+        let minLift = Infinity;
+
+        for (let day = 0; day < 7; day++){
+          for (let h = 0; h < HEATMAP_BUCKETS; h++){
+            const c = a.heatCount[day][h] || 0;
+            if (c <= 0) { matrix[day][h] = 0; continue; }
+            const sumRes = a.heatSum[day][h] || 0;
+            const shrunk = sumRes / (c + PRIOR); // EB shrink toward 0
+            const lift = Math.exp(shrunk);
+            matrix[day][h] = lift;
+            const likesSum = a.heatLikesSum[day][h] || 0;
+            avgLikes[day][h] = likesSum / c;
+            if (lift > 0) {
+              maxLift = Math.max(maxLift, lift);
+              minLift = Math.min(minLift, lift);
             }
           }
         }
-        
-        if (timeStats.size === 0) return null;
-        
-        // Find top 3 time buckets with highest average likes
-        const allBuckets = Array.from(timeStats.entries())
-          .map(([timeKey, stats]) => ({
-            timeKey,
-            avg: stats.totalLikes / stats.count,
-            count: stats.count,
-            stats
-          }))
-          .sort((a, b) => b.avg - a.avg);
+        if (!isFinite(minLift)) minLift = 0;
 
-        if (allBuckets.length === 0) return null;
-
-        const formatTime = (hour, minute) => {
-          const hour12 = hour % 12 || 12;
-          const minuteStr = String(minute).padStart(2, '0');
-          const ampm = hour >= 12 ? 'PM' : 'AM';
-          return `${hour12}:${minuteStr} ${ampm}`;
+        const pickBestDayForHour = (hour)=>{
+          if (!Number.isFinite(hour) || !Array.isArray(matrix)) return null;
+          let bestDay = null;
+          let bestLift = 0;
+          for (let day = 0; day < matrix.length; day++){
+            const row = matrix[day];
+            const lift = Number(row?.[hour]);
+            if (!Number.isFinite(lift)) continue;
+            if (lift > bestLift) {
+              bestLift = lift;
+              bestDay = day;
+            }
+          }
+          return bestDay;
+        };
+        const applyHeatmapDay = (rec)=>{
+          if (!rec) return;
+          const bestDay = pickBestDayForHour(rec.bestHour);
+          if (bestDay == null) return;
+          rec.bestDayOfWeek = bestDay;
+          rec.dayStr = ` on ${dayNames[bestDay]}`;
         };
 
-        const buildRecommendation = (buckets, totalPosts)=>{
-          if (!buckets || buckets.length === 0) return null;
-          const times = buckets.flatMap(bucket => bucket.stats.times)
-            .sort((a, b) => {
-              if (a.hour !== b.hour) return a.hour - b.hour;
-              return a.minute - b.minute;
-            });
-          if (!times.length) return null;
-
-          const medianIdx = Math.floor(times.length / 2);
-          const medianTime = times[medianIdx];
-          const bestHour = medianTime.hour;
-          const bestMinute = medianTime.minute;
-          const recommendMinute = bestMinute < 30 ? 1 : 31;
-
-          let timeRangeStr;
-          if (times.length <= 5) {
-            timeRangeStr = formatTime(medianTime.hour, medianTime.minute);
-          } else {
-            const q1Idx = Math.floor(times.length * 0.25);
-            const q3Idx = Math.floor(times.length * 0.75);
-            const q1Time = times[q1Idx];
-            const q3Time = times[q3Idx];
-            const q1Minutes = q1Time.hour * 60 + q1Time.minute;
-            const q3Minutes = q3Time.hour * 60 + q3Time.minute;
-            const rangeMinutes = q3Minutes - q1Minutes;
-            if (rangeMinutes > 180) {
-              const medianMinutes = bestHour * 60 + bestMinute;
-              const startMinutes = Math.max(0, medianMinutes - 60);
-              const endMinutes = Math.min(1439, medianMinutes + 60);
-              const startHour = Math.floor(startMinutes / 60) % 24;
-              const startMin = startMinutes % 60;
-              const endHour = Math.floor(endMinutes / 60) % 24;
-              const endMin = endMinutes % 60;
-              timeRangeStr = `${formatTime(startHour, startMin)} - ${formatTime(endHour, endMin)}`;
-            } else {
-              timeRangeStr = `${formatTime(q1Time.hour, q1Time.minute)} - ${formatTime(q3Time.hour, q3Time.minute)}`;
-            }
-          }
-
-          const recommendTimeStr = formatTime(bestHour, recommendMinute);
-
-          const dayOfWeekMap = new Map();
-          for (const bucket of buckets) {
-            for (const [day, count] of bucket.stats.dayOfWeek.entries()) {
-              dayOfWeekMap.set(day, (dayOfWeekMap.get(day) || 0) + count);
-            }
-          }
-
-          let bestDayOfWeek = null;
-          let bestDayCount = 0;
-          for (const [day, count] of dayOfWeekMap.entries()){
-            if (count > bestDayCount){
-              bestDayCount = count;
-              bestDayOfWeek = day;
-            }
-          }
-
-          const date = new Date();
-          date.setHours(bestHour, bestMinute, 0, 0);
-
-          const tzStr = date.toLocaleTimeString('en-US', {
-            timeZoneName: 'short'
-          }).split(' ').pop();
-
-          const dayStr = bestDayOfWeek != null ? dayNames[bestDayOfWeek] : '';
-          const postCount = buckets.reduce((sum, bucket)=>sum + (bucket.count || 0), 0);
-
-          return {
-            timeStr: `${timeRangeStr} ${tzStr}`,
-            recommendTimeStr: `${recommendTimeStr} ${tzStr}`,
-            dayStr: dayStr ? ` on ${dayStr}` : '',
-            postCount,
-            totalPostsUsed: totalPosts,
-            bestHour,
-            bestMinute,
-            bestDayOfWeek
-          };
-        };
+        // Rank time buckets by lift (or equivalently by shrunk residual)
+        const allBuckets = Array.from(a.timeStats.entries())
+          .map(([timeKey, stats]) => {
+            const count = Number(stats?.count) || 0;
+            if (count <= 0) return null;
+            const sumRes = Number(stats?.sumRes) || 0;
+            const shrunk = sumRes / (count + PRIOR);
+            const score = shrunk; // rank in log-space
+            const lift = Math.exp(shrunk);
+            return { timeKey, score, lift, count, stats };
+          })
+          .filter(Boolean)
+          .sort((x, y) => (y.score - x.score) || (y.count - x.count));
 
         const primary = buildRecommendation(allBuckets.slice(0, 3), totalPostsUsed);
+        if (primary) applyHeatmapDay(primary);
+
         let secondary = null;
         if (primary && allBuckets.length > 0) {
           const minHourDistance = 6;
           const primaryHour = primary.bestHour;
           const primaryDayStr = primary.dayStr ? primary.dayStr.replace(' on ', '') : '';
+
           const getHourDistance = (hour)=>{
             const diff = Math.abs(hour - primaryHour);
             return Math.min(diff, 24 - diff);
           };
+
           const eligibleBuckets = allBuckets.filter((bucket)=>{
-            const hours = bucket.stats.times.map(t=>t.hour);
-            const avgHour = hours.reduce((sum, h)=>sum + h, 0) / (hours.length || 1);
-            const dayCounts = bucket.stats.dayOfWeek;
+            const dayCounts = bucket.stats?.dayOfWeek;
             let topDay = null;
             let topCount = 0;
-            for (const [day, count] of dayCounts.entries()){
-              if (count > topCount){
-                topCount = count;
-                topDay = day;
+            if (dayCounts instanceof Map) {
+              for (const [day, count] of dayCounts.entries()){
+                if (count > topCount){
+                  topCount = count;
+                  topDay = day;
+                }
               }
             }
             const dayStr = topDay != null ? dayNames[topDay] : '';
             return (!primaryDayStr || dayStr !== primaryDayStr);
           });
+
           const farBucket = eligibleBuckets.find((bucket)=>{
-            const hours = bucket.stats.times.map(t=>t.hour);
-            const avgHour = hours.reduce((sum, h)=>sum + h, 0) / (hours.length || 1);
-            return getHourDistance(avgHour) > minHourDistance;
+            const hr = Number(bucket?.stats?.hour);
+            if (!isFinite(hr)) return false;
+            return getHourDistance(hr) > minHourDistance;
           }) || eligibleBuckets[0];
+
           secondary = farBucket ? buildRecommendation([farBucket], totalPostsUsed) : null;
         }
 
-        return { primary, secondary };
+        return {
+          primary: primary || null,
+          secondary: secondary || null,
+          heatmap: {
+            matrix,
+            counts: a.heatCount.map((row)=> row.map((v)=> Math.max(0, Math.floor(Number(v) || 0)))),
+            avgLikes,
+            max: maxLift || 0,
+            min: (minLift && isFinite(minLift)) ? minLift : 0
+          }
+        };
       }
-      
-      const yearResult = calculateBestTimeForRange(365);
-      const monthResult = calculateBestTimeForRange(30);
-      const weekResult = calculateBestTimeForRange(7);
-      const yearHeatmap = buildHeatmap(365);
-      const monthHeatmap = buildHeatmap(30);
-      const weekHeatmap = buildHeatmap(7);
-      
+
       return {
-        year: { ...yearResult, heatmap: yearHeatmap },
-        month: { ...monthResult, heatmap: monthHeatmap },
-        week: { ...weekResult, heatmap: weekHeatmap }
+        year: finalizeRange('year'),
+        month: finalizeRange('month'),
+        week: finalizeRange('week')
       };
     }
 
 
   // Function to update best time to post section
-    let lastBestTimeUpdate = 0;
-    let bestTimeData = null;
-    let bestTimeRange = 'year';
-    let bestTimeRec = 'primary';
-    let bestTimeHeatmapTooltip = null;
+    function scheduleBestTimeRefresh(){
+      if (bestTimeRefreshInFlight) {
+        bestTimeRefreshQueued = true;
+        return;
+      }
+      bestTimeRefreshInFlight = true;
+      const metricsStamp = lastMetricsUpdatedAt || 0;
+      const run = () => {
+        try {
+          bestTimeData = calculateBestPostTimeForLikes();
+          lastBestTimeUpdate = Date.now();
+          if (metricsStamp) lastBestTimeMetricsUpdatedAt = metricsStamp;
+          saveBestTimeCache(bestTimeData);
+          saveSessionCache();
+          renderBestTimeWidget(bestTimeData, bestTimeRange);
+        } finally {
+          bestTimeRefreshInFlight = false;
+          if (bestTimeRefreshQueued) {
+            bestTimeRefreshQueued = false;
+            scheduleBestTimeRefresh();
+          }
+        }
+      };
+      if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(run, { timeout: 1500 });
+      } else {
+        setTimeout(run, 0);
+      }
+    }
     function openTopFeedGatherWindow(){
       const url = 'https://sora.chatgpt.com/explore?feed=top&gather=1';
       try {
@@ -5105,6 +6107,11 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         openTopFeedGatherWindow();
       });
     }
+    function initBestTimeInfoTooltip(){
+      const infoEl = $('#bestTimeLiftInfo');
+      if (!infoEl) return;
+      bindBestTimeInfoTooltip(infoEl);
+    }
     function initMetricsGatherLink(){
       const link = $('#metricsGatherLink');
       if (!link) return;
@@ -5126,7 +6133,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       heatmapEl.dataset.tooltipBound = '1';
       if (!bestTimeHeatmapTooltip) {
         bestTimeHeatmapTooltip = document.createElement('div');
-        bestTimeHeatmapTooltip.className = 'tooltip';
+        bestTimeHeatmapTooltip.className = 'tooltip best-time-tooltip';
         bestTimeHeatmapTooltip.style.display = 'none';
         document.body.appendChild(bestTimeHeatmapTooltip);
       }
@@ -5158,6 +6165,41 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       heatmapEl.addEventListener('mouseleave', hide);
       heatmapEl.addEventListener('blur', hide, true);
     }
+    function bindBestTimeInfoTooltip(infoEl){
+      if (!infoEl || infoEl.dataset.tooltipBound === '1') return;
+      infoEl.dataset.tooltipBound = '1';
+      if (!bestTimeInfoTooltip) {
+        bestTimeInfoTooltip = document.createElement('div');
+        bestTimeInfoTooltip.className = 'tooltip best-time-info-tooltip';
+        bestTimeInfoTooltip.style.display = 'none';
+        document.body.appendChild(bestTimeInfoTooltip);
+      }
+      const hide = ()=>{
+        if (bestTimeInfoTooltip) bestTimeInfoTooltip.style.display = 'none';
+      };
+      const showAt = (clientX, clientY)=>{
+        const text = infoEl?.dataset?.tooltip || '';
+        if (!text || !bestTimeInfoTooltip) return;
+        bestTimeInfoTooltip.textContent = text;
+        bestTimeInfoTooltip.style.display = 'block';
+        const width = bestTimeInfoTooltip.offsetWidth || 0;
+        let left = clientX - width / 2;
+        left = Math.max(8, Math.min(window.innerWidth - width - 8, left));
+        bestTimeInfoTooltip.style.left = left + 'px';
+        bestTimeInfoTooltip.style.top = (clientY + 10) + 'px';
+      };
+      const show = (e)=>{
+        const rect = infoEl.getBoundingClientRect();
+        const x = (e && typeof e.clientX === 'number') ? e.clientX : (rect.left + rect.width / 2);
+        const y = (e && typeof e.clientY === 'number') ? e.clientY : rect.bottom;
+        showAt(x, y);
+      };
+      infoEl.addEventListener('mouseenter', show);
+      infoEl.addEventListener('mousemove', show);
+      infoEl.addEventListener('mouseleave', hide);
+      infoEl.addEventListener('focus', show);
+      infoEl.addEventListener('blur', hide);
+    }
     function formatBestTime(hour, minute){
       const hour12 = hour % 12 || 12;
       const minuteStr = String(minute).padStart(2, '0');
@@ -5178,7 +6220,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       if (!candidates.length) return null;
       const tzStr = now.toLocaleTimeString('en-US', { timeZoneName: 'short' }).split(' ').pop();
       const nowMs = now.getTime();
-      const buildForHour = (hour)=>{
+      const buildForHour = (hour, expectedLift)=>{
         const start = new Date(now);
         start.setHours(hour, 0, 0, 0);
         const end = new Date(now);
@@ -5205,12 +6247,14 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           postCount: 0,
           totalPostsUsed,
           bestHour: hour,
-          bestMinute: recommendMinute
+          bestMinute: recommendMinute,
+          bestDayOfWeek: day,
+          expectedLift: Number.isFinite(expectedLift) ? expectedLift : null
         };
       };
       let picked = null;
       for (const candidate of candidates){
-        const candidateRec = buildForHour(candidate.hour);
+        const candidateRec = buildForHour(candidate.hour, candidate.score);
         if (candidateRec) { picked = candidateRec; break; }
       }
       if (!picked) {
@@ -5223,7 +6267,9 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           postCount: 0,
           totalPostsUsed,
           bestHour: fallback.hour,
-          bestMinute: 1
+          bestMinute: 1,
+          bestDayOfWeek: day,
+          expectedLift: Number.isFinite(fallback?.score) ? fallback.score : null
         };
       }
       return picked;
@@ -5247,7 +6293,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       const timeEl = $('#bestTimeTime');
       const windowEl = $('#bestTimeWindow');
       const countEl = $('#bestTimeCount');
-      const insightEl = $('#bestTimeInsight');
+      const liftEl = $('#bestTimeLift');
       const heatmapEl = $('#bestTimeHeatmap');
       const tabWeek = $('#bestTimeTabWeek');
       const tabMonth = $('#bestTimeTabMonth');
@@ -5292,7 +6338,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         if (timeEl) timeEl.textContent = '—';
         if (windowEl) windowEl.textContent = '—';
         if (countEl) countEl.textContent = '0 posts';
-        if (insightEl) insightEl.textContent = 'Not enough data yet.';
+        if (liftEl) liftEl.textContent = '—';
         if (heatmapEl) heatmapEl.innerHTML = '';
         applyRecUi();
         return;
@@ -5310,10 +6356,12 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       const totalPosts = selected?.totalPostsUsed ?? selected?.postCount ?? 0;
       const rangeLabel = range === 'week' ? 'this week' : (range === 'year' ? 'this year' : 'this month');
       if (countEl) countEl.textContent = `${(totalPosts || 0).toLocaleString()} posts ${rangeLabel}`;
-      if (insightEl) {
-        const base = dayStr === 'No strong preference' ? 'Engagement stays evenly spread across the week.' : `Engagement peaks on ${dayStr}.`;
-        insightEl.textContent = base;
+      let liftText = '—';
+      const expectedLift = Number(selected?.expectedLift);
+      if (Number.isFinite(expectedLift) && expectedLift > 0) {
+        liftText = `${expectedLift.toFixed(2)}x usual likes`;
       }
+      if (liftEl) liftEl.textContent = liftText;
       applyRecUi();
       if (heatmapEl) heatmapEl.dataset.todayMode = isToday ? '1' : '0';
       if (heatmapEl && data.heatmap) {
@@ -5342,16 +6390,16 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         };
         heatmapEl.innerHTML = '';
         let max = data.heatmap.max || 0;
-        if (todayActiveHours) {
-          max = 0;
-          data.heatmap.matrix.forEach((row, dayIdx)=>{
-            row.forEach((v, colIdx)=>{
-              if (todayActiveHours.has(`${dayIdx}-${colIdx}`)) {
-                max = Math.max(max, v);
-              }
-            });
-          });
-        }
+        let min = isFinite(data.heatmap.min) ? data.heatmap.min : 0;
+        const RANGE_FLOOR = 0.12;
+        const DEADBAND = 0.03;
+        const BASE_ALPHA = 0.16;
+        const aboveRange = Math.max(RANGE_FLOOR, max - 1);
+        const belowRange = Math.max(RANGE_FLOOR, 1 - min);
+        const OVER_ALPHA_MIN = 0.18;
+        const OVER_ALPHA_MAX = 0.95;
+        const UNDER_ALPHA_MIN = 0.06;
+        const UNDER_ALPHA_MAX = 0.36;
         data.heatmap.matrix.forEach((row, dayIdx)=>{
           const rowEl = document.createElement('div');
           rowEl.className = 'best-time-heatmap-row';
@@ -5373,11 +6421,17 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
             }
             const startHour = colIdx;
             const endHour = startHour + 1;
-            const likes = Math.round(v || 0);
-            const likesDisplay = likes < 1000 ? likes.toLocaleString() : fmt2(likes);
-            const likesStr = `${likesDisplay} like${likes === 1 ? '' : 's'}`;
+            const lift = Number(v) || 0;
+            const hasCounts = Array.isArray(data.heatmap.counts);
+            const hasAvgLikes = Array.isArray(data.heatmap.avgLikes);
+            const count = Number(data.heatmap.counts?.[dayIdx]?.[colIdx]) || 0;
+            const avgLikes = Number(data.heatmap.avgLikes?.[dayIdx]?.[colIdx]) || 0;
             const timeStr = formatRangeShort(startHour, endHour);
-            const tooltip = `${dayNamesFull[dayIdx]} ${timeStr} ${tz} averages ${likesStr}`;
+            const tooltip = lift > 0
+              ? (hasCounts || hasAvgLikes
+                ? `${hasCounts ? fmt0(count) : '—'} posts avg ${hasAvgLikes ? fmt0(avgLikes) : '—'} likes on ${dayNamesShort[dayIdx]} ${timeStr} ${tz}`
+                : `${dayNamesShort[dayIdx]} ${timeStr} ${tz}`)
+              : `${dayNamesShort[dayIdx]} ${timeStr} ${tz} has no data`;
             if (!isToday || isTodayActive) {
               cell.dataset.tooltip = tooltip;
               cell.setAttribute('aria-label', tooltip);
@@ -5385,11 +6439,22 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
               cell.dataset.tooltip = '';
               cell.setAttribute('aria-label', '');
             }
-            if (max > 0) {
-              const pct = v / max;
-              if (pct > 0.66) cell.classList.add('level-3');
-              else if (pct > 0.33) cell.classList.add('level-2');
-              else if (pct > 0.1) cell.classList.add('level-1');
+            if (!isToday || isTodayActive) {
+              if (lift > 0) {
+                cell.style.background = `rgba(var(--heatmap-accent-rgb), ${BASE_ALPHA.toFixed(3)})`;
+              }
+              const delta = lift - 1;
+              if (Math.abs(delta) > DEADBAND) {
+                if (delta > 0 && aboveRange > 0) {
+                  const pct = Math.max(0, Math.min(1, delta / aboveRange));
+                  const alpha = OVER_ALPHA_MIN + pct * (OVER_ALPHA_MAX - OVER_ALPHA_MIN);
+                  cell.style.background = `rgba(var(--heatmap-accent-rgb), ${alpha.toFixed(3)})`;
+                } else if (delta < 0 && belowRange > 0) {
+                  const pct = Math.max(0, Math.min(1, (-delta) / belowRange));
+                  const alpha = UNDER_ALPHA_MIN + pct * (UNDER_ALPHA_MAX - UNDER_ALPHA_MIN);
+                  cell.style.background = `rgba(var(--heatmap-under-rgb), ${alpha.toFixed(3)})`;
+                }
+              }
             }
             cells.appendChild(cell);
           });
@@ -5400,29 +6465,54 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       }
     }
     function updateBestTimeToPostSection(){
-      const now = Date.now();
-      const shouldRefresh = !lastBestTimeUpdate || now - lastBestTimeUpdate >= 60000;
-      if (shouldRefresh) {
-        lastBestTimeUpdate = now;
-        bestTimeData = calculateBestPostTimeForLikes();
+      if (isMetricsPartial) {
+        if (bestTimeData) renderBestTimeWidget(bestTimeData, bestTimeRange);
+        return;
       }
-      
-      // Render grids
-      renderBestTimeWidget(bestTimeData, bestTimeRange);
+      if (bestTimeData) renderBestTimeWidget(bestTimeData, bestTimeRange);
+      const now = Date.now();
+      const metricsChanged = !!(lastMetricsUpdatedAt && lastMetricsUpdatedAt !== lastBestTimeMetricsUpdatedAt);
+      const shouldRefresh = metricsChanged || !bestTimeData || !lastBestTimeUpdate || now - lastBestTimeUpdate >= 60000;
+      if (!shouldRefresh) return;
+      scheduleBestTimeRefresh();
     }
     function initBestTimeTabs(){
       const weekBtn = $('#bestTimeTabWeek');
       const monthBtn = $('#bestTimeTabMonth');
       const yearBtn = $('#bestTimeTabYear');
-      if (weekBtn) weekBtn.addEventListener('click', ()=>{ bestTimeRange = 'week'; renderBestTimeWidget(bestTimeData, bestTimeRange); });
-      if (monthBtn) monthBtn.addEventListener('click', ()=>{ bestTimeRange = 'month'; renderBestTimeWidget(bestTimeData, bestTimeRange); });
-      if (yearBtn) yearBtn.addEventListener('click', ()=>{ bestTimeRange = 'year'; renderBestTimeWidget(bestTimeData, bestTimeRange); });
+      if (weekBtn) weekBtn.addEventListener('click', ()=>{
+        bestTimeRange = 'week';
+        saveBestTimePrefs();
+        renderBestTimeWidget(bestTimeData, bestTimeRange);
+      });
+      if (monthBtn) monthBtn.addEventListener('click', ()=>{
+        bestTimeRange = 'month';
+        saveBestTimePrefs();
+        renderBestTimeWidget(bestTimeData, bestTimeRange);
+      });
+      if (yearBtn) yearBtn.addEventListener('click', ()=>{
+        bestTimeRange = 'year';
+        saveBestTimePrefs();
+        renderBestTimeWidget(bestTimeData, bestTimeRange);
+      });
       const recPrimaryBtn = $('#bestTimeRecPrimary');
       const recSecondaryBtn = $('#bestTimeRecSecondary');
       const recTodayBtn = $('#bestTimeRecToday');
-      if (recPrimaryBtn) recPrimaryBtn.addEventListener('click', ()=>{ bestTimeRec = 'primary'; renderBestTimeWidget(bestTimeData, bestTimeRange); });
-      if (recSecondaryBtn) recSecondaryBtn.addEventListener('click', ()=>{ bestTimeRec = 'secondary'; renderBestTimeWidget(bestTimeData, bestTimeRange); });
-      if (recTodayBtn) recTodayBtn.addEventListener('click', ()=>{ bestTimeRec = 'today'; renderBestTimeWidget(bestTimeData, bestTimeRange); });
+      if (recPrimaryBtn) recPrimaryBtn.addEventListener('click', ()=>{
+        bestTimeRec = 'primary';
+        saveBestTimePrefs();
+        renderBestTimeWidget(bestTimeData, bestTimeRange);
+      });
+      if (recSecondaryBtn) recSecondaryBtn.addEventListener('click', ()=>{
+        bestTimeRec = 'secondary';
+        saveBestTimePrefs();
+        renderBestTimeWidget(bestTimeData, bestTimeRange);
+      });
+      if (recTodayBtn) recTodayBtn.addEventListener('click', ()=>{
+        bestTimeRec = 'today';
+        saveBestTimePrefs();
+        renderBestTimeWidget(bestTimeData, bestTimeRange);
+      });
     }
 
     // Function to update first 24 hours chart
@@ -5446,7 +6536,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           // Include all posts with post_time, even if they have no snapshots or no snapshots in the time window
           out.push({ id: pid, label, color, points: pts, url: absUrl(p.url, pid), postTime: postTime }); }
         return out; })();
-      const yAxisLabel = useUnique ? 'Unique Views' : 'Total Views';
+      const yAxisLabel = useUnique ? 'Viewers' : 'Total Views';
       first24HoursChart.setData(f24Series, timeWindowMinutes);
       // Update chart label by recreating it with new label
       const canvas = $('#first24HoursChart');
@@ -5497,25 +6587,38 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       staleBtn.textContent = `Stale (${count})`;
     }
 
-	    async function refreshUserUI(opts={}){
-	      const { preserveEmpty=false, skipRestoreZoom=false, skipPostListRebuild=false, autoRefresh=false } = opts;
-      const user = resolveUserForKey(metrics, currentUserKey);
-      if (!user){
-        updateMetricsHeader(currentUserKey, null);
-        updateMetricsGatherNote(currentUserKey, null);
-        setListActionActive('showAll');
-        currentVisibilitySource = 'showAll';
-        buildPostsList(null, ()=>COLORS[0], new Set()); chart.setData([]); return;
-      }
-      // No precompute needed for IR; use latest available remix count only for cards
-      // Integrity check: remove posts incorrectly attributed to this user
-      // Reconcile ownership (selected user only), then reclaim, then remove empty posts
-      if (!isTopTodayKey(currentUserKey)){
-        await pruneMismatchedPostsForUser(metrics, currentUserKey);
-        await reclaimFromUnknownForUser(metrics, currentUserKey);
-        await pruneEmptyPostsForUser(metrics, currentUserKey);
-      }
-	      const colorFor = makeColorMap(user);
+    async function refreshUserUI(opts={}){
+      const perfUI = perfStart('refreshUserUI total');
+      try {
+        const { preserveEmpty=false, skipRestoreZoom=false, skipPostListRebuild=false, autoRefresh=false } = opts;
+        const user = resolveUserForKey(metrics, currentUserKey);
+        if (!user){
+          updateMetricsHeader(currentUserKey, null);
+          updateMetricsGatherNote(currentUserKey, null);
+          setListActionActive('showAll');
+          currentVisibilitySource = 'showAll';
+          buildPostsList(null, ()=>getPaletteColor(0), new Set()); chart.setData([]); return;
+        }
+        // No precompute needed for IR; use latest available remix count only for cards
+        // Integrity check: remove posts incorrectly attributed to this user
+        // Reconcile ownership (selected user only), then reclaim, then remove empty posts
+        if (!isTopTodayKey(currentUserKey) && !isMetricsPartial){
+          const now = Date.now();
+          const lastPruneAt = lastPruneAtByUser.get(currentUserKey) || 0;
+          const shouldPrune = !autoRefresh || (now - lastPruneAt >= PRUNE_THROTTLE_MS);
+          if (shouldPrune) {
+            lastPruneAtByUser.set(currentUserKey, now);
+            const perfPrune = perfStart('prune posts');
+            try {
+              await pruneMismatchedPostsForUser(metrics, currentUserKey, { log: !autoRefresh });
+              await reclaimFromUnknownForUser(metrics, currentUserKey);
+              await pruneEmptyPostsForUser(metrics, currentUserKey);
+            } finally {
+              perfEnd(perfPrune);
+            }
+          }
+        }
+        const colorFor = makeColorMap(user);
         const isTopToday = isTopTodayKey(currentUserKey);
         updateMetricsHeader(currentUserKey, user);
         updateMetricsGatherNote(currentUserKey, user);
@@ -5576,176 +6679,186 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           currentVisibilitySource = 'showAll';
           persistVisibility();
         }
-      const uiActionId = currentListActionId || currentVisibilitySource;
-      const isValidAction = uiActionId === 'showAll' || uiActionId === 'hideAll' || uiActionId === 'custom' || isPresetVisibilitySource(uiActionId);
-      if (isValidAction) {
-        setListActionActive(uiActionId);
-      } else {
-        currentVisibilitySource = 'showAll';
-        currentListActionId = 'showAll';
-        visibleSet.clear();
-        Object.keys(user.posts||{}).forEach(pid=>visibleSet.add(pid));
-        setListActionActive('showAll');
-        persistVisibility();
-      }
-      updateCustomButtonLabel(currentUserKey);
-      const visibilityActionId = currentListActionId || currentVisibilitySource;
-      const listActionId = (function(){
-        if (currentListActionId === 'showAll' || currentListActionId === 'hideAll' || currentListActionId === 'custom') return currentListActionId;
-        if (isPresetVisibilitySource(currentListActionId)) return currentListActionId;
-        if (currentVisibilitySource === 'showAll' || currentVisibilitySource === 'hideAll') return currentVisibilitySource;
-        if (isPresetVisibilitySource(currentVisibilitySource)) return currentVisibilitySource;
-        if (currentVisibilitySource === 'custom') return 'custom';
-        return null;
-      })();
-      if (autoRefresh) {
-        const nextSet = computeVisibleSetForAction(user, visibilityActionId);
-        if (nextSet) {
+        const uiActionId = currentListActionId || currentVisibilitySource;
+        const isValidAction = uiActionId === 'showAll' || uiActionId === 'hideAll' || uiActionId === 'custom' || isPresetVisibilitySource(uiActionId);
+        if (isValidAction) {
+          setListActionActive(uiActionId);
+        } else {
+          currentVisibilitySource = 'showAll';
+          currentListActionId = 'showAll';
           visibleSet.clear();
-          for (const pid of nextSet) visibleSet.add(pid);
+          Object.keys(user.posts||{}).forEach(pid=>visibleSet.add(pid));
+          setListActionActive('showAll');
+          persistVisibility();
         }
-      }
-      const listOpts = { 
-        activeActionId: listActionId,
-        onHover: (pid)=> { chart.setHoverSeries(pid); viewsChart.setHoverSeries(pid); first24HoursChart.setHoverSeries(pid); viewsPerPersonChart.setHoverSeries(pid); },
-        onPurge: (pid, snippet) => showPostPurgeConfirm(snippet, pid)
-      };
-      if (skipPostListRebuild && updatePostsListRows(user, colorFor, visibleSet, listOpts)) {
-        // keep existing list to avoid flicker
-      } else {
-        buildPostsList(user, colorFor, visibleSet, listOpts);
-      }
-      updateStaleButtonCount(user);
-      const useUnique = viewsChartType === 'unique';
-      const series = computeSeriesForUser(user, [], colorFor, useUnique)
-        .filter(s=>visibleSet.has(s.id))
-        .map(s=>({ ...s, url: absUrl(user.posts?.[s.id]?.url, s.id) }));
-      chart.setData(series);
-      // Time chart: cumulative views by time
-      const vSeries = (function(){
-        const out=[]; for (const [pid,p] of Object.entries(user.posts||{})){
-          if (!visibleSet.has(pid)) continue; 
-          const pts=[]; 
-          for (const s of (p.snapshots||[])){ 
-            const t=s.t; 
-            const v=useUnique ? s.uv : s.views; 
-            if (t!=null && v!=null) pts.push({ x:Number(t), y:Number(v), t:Number(t) }); 
+        updateCustomButtonLabel(currentUserKey);
+        const visibilityActionId = currentListActionId || currentVisibilitySource;
+        const listActionId = (function(){
+          if (currentListActionId === 'showAll' || currentListActionId === 'hideAll' || currentListActionId === 'custom') return currentListActionId;
+          if (isPresetVisibilitySource(currentListActionId)) return currentListActionId;
+          if (currentVisibilitySource === 'showAll' || currentVisibilitySource === 'hideAll') return currentVisibilitySource;
+          if (isPresetVisibilitySource(currentVisibilitySource)) return currentVisibilitySource;
+          if (currentVisibilitySource === 'custom') return 'custom';
+          return null;
+        })();
+        if (autoRefresh) {
+          const nextSet = computeVisibleSetForAction(user, visibilityActionId);
+          if (nextSet) {
+            visibleSet.clear();
+            for (const pid of nextSet) visibleSet.add(pid);
           }
-          const color=colorFor(pid); 
-          const owner = user?.__specialKey === TOP_TODAY_KEY ? (p?.ownerHandle || '') : (user?.handle || '');
-          const label = buildPostLabel({ ...p, id: pid }, owner); 
-          if (pts.length) out.push({ id: pid, label, color, points: pts, url: absUrl(p.url, pid) }); 
         }
-        return out; })();
-      viewsChart.setData(vSeries);
-      // Views Per Person chart: total views / unique views over time since post creation
-      updateViewsPerPersonChart(parseInt($('#viewsPerPersonSlider')?.value) || 1440);
-      // First 24 hours chart: views over time since post creation
-      updateFirst24HoursChart(parseInt($('#first24HoursSlider')?.value) || 1440);
-      // Only update compare charts if no compare users are selected
-      if (compareUsers.size === 0){
-        // Update unfiltered totals cards for single user
+        const listOpts = { 
+          activeActionId: listActionId,
+          onHover: (pid)=> { chart.setHoverSeries(pid); viewsChart.setHoverSeries(pid); first24HoursChart.setHoverSeries(pid); viewsPerPersonChart.setHoverSeries(pid); },
+          onPurge: (pid, snippet) => showPostPurgeConfirm(snippet, pid)
+        };
+        const perfList = perfStart('render posts list');
         try {
-          const t = computeTotalsForUser(user);
-          const allTotalViewsEl = $('#allTotalViewsTotal'); if (allTotalViewsEl) allTotalViewsEl.textContent = fmt2(t.views);
-          const allUniqueViewsEl = $('#allUniqueViewsTotal'); if (allUniqueViewsEl) allUniqueViewsEl.textContent = fmt2(t.uniqueViews);
-          const allLikesEl = $('#allLikesTotal'); if (allLikesEl) allLikesEl.textContent = fmt2(t.likes);
-          const allRepliesEl = $('#allRepliesTotal'); if (allRepliesEl) allRepliesEl.textContent = fmtK2OrInt(t.replies);
-          const allRemixesEl = $('#allRemixesTotal'); if (allRemixesEl) allRemixesEl.textContent = fmt2(t.remixes);
-          const allInterEl = $('#allInteractionsTotal'); if (allInterEl) allInterEl.textContent = fmt2(t.interactions);
-          const allCameosEl = $('#allCameosTotal');
-          if (allCameosEl) {
-            const arr = Array.isArray(user.cameos) ? user.cameos : [];
-            const last = arr[arr.length - 1];
-            allCameosEl.textContent = last ? fmtK2OrInt(last.count) : '0';
+          if (skipPostListRebuild && updatePostsListRows(user, colorFor, visibleSet, listOpts)) {
+            // keep existing list to avoid flicker
+          } else {
+            buildPostsList(user, colorFor, visibleSet, listOpts);
           }
-          const followersEl = $('#followersTotal');
-          if (followersEl){
-            const arr = Array.isArray(user.followers) ? user.followers : [];
-            const last = arr[arr.length - 1];
-            followersEl.textContent = last ? fmtK2OrInt(last.count) : '0';
+        } finally {
+          perfEnd(perfList);
+        }
+        updateStaleButtonCount(user);
+        const perfCharts = perfStart('charts + summaries');
+        try {
+          const useUnique = viewsChartType === 'unique';
+          const series = computeSeriesForUser(user, [], colorFor, useUnique)
+            .filter(s=>visibleSet.has(s.id))
+            .map(s=>({ ...s, url: absUrl(user.posts?.[s.id]?.url, s.id) }));
+          chart.setData(series);
+          // Time chart: cumulative views by time
+          const vSeries = (function(){
+            const out=[]; for (const [pid,p] of Object.entries(user.posts||{})){
+              if (!visibleSet.has(pid)) continue; 
+              const pts=[]; 
+              for (const s of (p.snapshots||[])){ 
+                const t=s.t; 
+                const v=useUnique ? s.uv : s.views; 
+                if (t!=null && v!=null) pts.push({ x:Number(t), y:Number(v), t:Number(t) }); 
+              }
+              const color=colorFor(pid); 
+              const owner = user?.__specialKey === TOP_TODAY_KEY ? (p?.ownerHandle || '') : (user?.handle || '');
+              const label = buildPostLabel({ ...p, id: pid }, owner); 
+              if (pts.length) out.push({ id: pid, label, color, points: pts, url: absUrl(p.url, pid) }); 
+            }
+            return out; })();
+          viewsChart.setData(vSeries);
+          // Views Per Person chart: total views / unique views over time since post creation
+          updateViewsPerPersonChart(parseInt($('#viewsPerPersonSlider')?.value) || 1440);
+          // First 24 hours chart: views over time since post creation
+          updateFirst24HoursChart(parseInt($('#first24HoursSlider')?.value) || 1440);
+          // Only update compare charts if no compare users are selected
+          if (compareUsers.size === 0){
+            // Update unfiltered totals cards for single user
+            try {
+              const t = computeTotalsForUser(user);
+              const allTotalViewsEl = $('#allTotalViewsTotal'); if (allTotalViewsEl) allTotalViewsEl.textContent = fmt2(t.views);
+              const allUniqueViewsEl = $('#allUniqueViewsTotal'); if (allUniqueViewsEl) allUniqueViewsEl.textContent = fmt2(t.uniqueViews);
+              const allLikesEl = $('#allLikesTotal'); if (allLikesEl) allLikesEl.textContent = fmt2(t.likes);
+              const allRepliesEl = $('#allRepliesTotal'); if (allRepliesEl) allRepliesEl.textContent = fmtK2OrInt(t.replies);
+              const allRemixesEl = $('#allRemixesTotal'); if (allRemixesEl) allRemixesEl.textContent = fmt2(t.remixes);
+              const allInterEl = $('#allInteractionsTotal'); if (allInterEl) allInterEl.textContent = fmt2(t.interactions);
+              const allCameosEl = $('#allCameosTotal');
+              if (allCameosEl) {
+                const arr = Array.isArray(user.cameos) ? user.cameos : [];
+                const last = arr[arr.length - 1];
+                allCameosEl.textContent = last ? fmtK2OrInt(last.count) : '0';
+              }
+              const followersEl = $('#followersTotal');
+              if (followersEl){
+                const arr = Array.isArray(user.followers) ? user.followers : [];
+                const last = arr[arr.length - 1];
+                followersEl.textContent = last ? fmtK2OrInt(last.count) : '0';
+              }
+            } catch {}
+            // All posts cumulative likes (unfiltered): aggregate across all posts
+            try {
+              const ptsLikes = (function(){
+                const events = [];
+                for (const [pid, p] of Object.entries(user.posts||{})){
+                  for (const s of (p.snapshots||[])){
+                    const t = Number(s.t), v = Number(s.likes);
+                    if (isFinite(t) && isFinite(v)) events.push({ t, v, pid });
+                  }
+                }
+                events.sort((a,b)=> a.t - b.t);
+                const latest = new Map();
+                let total = 0;
+                const out = [];
+                for (const e of events){
+                  const prev = latest.get(e.pid) || 0;
+                  if (e.v !== prev){
+                    latest.set(e.pid, e.v);
+                    total += (e.v - prev);
+                    out.push({ x: e.t, y: total, t: e.t });
+                  }
+                }
+                return out;
+              })();
+              const colorLikes = '#ff8a7a';
+              const seriesLikes = ptsLikes.length ? [{ id: 'all_posts_likes', label: 'Likes', color: colorLikes, points: ptsLikes }] : [];
+              allLikesChart.setData(seriesLikes);
+            } catch {}
+            // All posts cumulative views (unfiltered): aggregate across all posts
+            try {
+              const useUnique = compareViewsChartType === 'unique';
+              const pts = (function(){
+                const events = [];
+                for (const [pid, p] of Object.entries(user.posts||{})){
+                  for (const s of (p.snapshots||[])){
+                    const t = Number(s.t);
+                    const v = useUnique ? Number(s.uv) : Number(s.views);
+                    if (isFinite(t) && isFinite(v)) events.push({ t, v, pid });
+                  }
+                }
+                events.sort((a,b)=> a.t - b.t);
+                const latest = new Map();
+                let total = 0;
+                const out = [];
+                for (const e of events){
+                  const prev = latest.get(e.pid) || 0;
+                  if (e.v !== prev){
+                    latest.set(e.pid, e.v);
+                    total += (e.v - prev);
+                    out.push({ x: e.t, y: total, t: e.t });
+                  }
+                }
+                return out;
+              })();
+              const color = '#7dc4ff';
+              const label = useUnique ? 'Viewers' : 'Total Views';
+              const series = pts.length ? [{ id: 'all_posts', label, color, points: pts }] : [];
+              const yAxisLabel = useUnique ? 'Viewers' : 'Total Views';
+              allViewsChart.setYAxisLabel(yAxisLabel);
+              allViewsChart.setData(series);
+            } catch {}
+            // Cast in chart: use user-level cast in count history when available
+            const cSeries = (function(){
+              const arr = Array.isArray(user.cameos) ? user.cameos : [];
+              const pts = arr.map(it=>({ x:Number(it.t), y:Number(it.count), t:Number(it.t) })).filter(p=>isFinite(p.x)&&isFinite(p.y));
+              const color = '#95e06c';
+              return pts.length ? [{ id: 'cameos', label: 'Cast in', color, points: pts }] : [];
+            })();
+            cameosChart.setData(cSeries);
+            // Followers chart: use user-level follower history when available
+            const fSeries = (function(){
+              const arr = Array.isArray(user.followers) ? user.followers : [];
+              const pts = arr.map(it=>({ x:Number(it.t), y:Number(it.count), t:Number(it.t) })).filter(p=>isFinite(p.x)&&isFinite(p.y));
+              const color = '#ffd166';
+              return pts.length ? [{ id: 'followers', label: 'Followers', color, points: pts }] : [];
+            })();
+            followersChart.setData(fSeries);
+          } else {
+            updateCompareCharts();
           }
-        } catch {}
-        // All posts cumulative likes (unfiltered): aggregate across all posts
-        try {
-          const ptsLikes = (function(){
-            const events = [];
-            for (const [pid, p] of Object.entries(user.posts||{})){
-              for (const s of (p.snapshots||[])){
-                const t = Number(s.t), v = Number(s.likes);
-                if (isFinite(t) && isFinite(v)) events.push({ t, v, pid });
-              }
-            }
-            events.sort((a,b)=> a.t - b.t);
-            const latest = new Map();
-            let total = 0;
-            const out = [];
-            for (const e of events){
-              const prev = latest.get(e.pid) || 0;
-              if (e.v !== prev){
-                latest.set(e.pid, e.v);
-                total += (e.v - prev);
-                out.push({ x: e.t, y: total, t: e.t });
-              }
-            }
-            return out;
-          })();
-          const colorLikes = '#ff8a7a';
-          const seriesLikes = ptsLikes.length ? [{ id: 'all_posts_likes', label: 'Likes', color: colorLikes, points: ptsLikes }] : [];
-          allLikesChart.setData(seriesLikes);
-        } catch {}
-        // All posts cumulative views (unfiltered): aggregate across all posts
-        try {
-          const useUnique = compareViewsChartType === 'unique';
-          const pts = (function(){
-            const events = [];
-            for (const [pid, p] of Object.entries(user.posts||{})){
-              for (const s of (p.snapshots||[])){
-                const t = Number(s.t);
-                const v = useUnique ? Number(s.uv) : Number(s.views);
-                if (isFinite(t) && isFinite(v)) events.push({ t, v, pid });
-              }
-            }
-            events.sort((a,b)=> a.t - b.t);
-            const latest = new Map();
-            let total = 0;
-            const out = [];
-            for (const e of events){
-              const prev = latest.get(e.pid) || 0;
-              if (e.v !== prev){
-                latest.set(e.pid, e.v);
-                total += (e.v - prev);
-                out.push({ x: e.t, y: total, t: e.t });
-              }
-            }
-            return out;
-          })();
-          const color = '#7dc4ff';
-          const label = useUnique ? 'Unique Views' : 'Total Views';
-          const series = pts.length ? [{ id: 'all_posts', label, color, points: pts }] : [];
-          const yAxisLabel = useUnique ? 'Unique Views' : 'Total Views';
-          allViewsChart.setYAxisLabel(yAxisLabel);
-          allViewsChart.setData(series);
-        } catch {}
-        // Cast in chart: use user-level cast in count history when available
-        const cSeries = (function(){
-          const arr = Array.isArray(user.cameos) ? user.cameos : [];
-          const pts = arr.map(it=>({ x:Number(it.t), y:Number(it.count), t:Number(it.t) })).filter(p=>isFinite(p.x)&&isFinite(p.y));
-          const color = '#95e06c';
-          return pts.length ? [{ id: 'cameos', label: 'Cast in', color, points: pts }] : [];
-        })();
-        cameosChart.setData(cSeries);
-        // Followers chart: use user-level follower history when available
-        const fSeries = (function(){
-          const arr = Array.isArray(user.followers) ? user.followers : [];
-          const pts = arr.map(it=>({ x:Number(it.t), y:Number(it.count), t:Number(it.t) })).filter(p=>isFinite(p.x)&&isFinite(p.y));
-          const color = '#ffd166';
-          return pts.length ? [{ id: 'followers', label: 'Followers', color, points: pts }] : [];
-        })();
-        followersChart.setData(fSeries);
-      } else {
-        updateCompareCharts();
-      }
+        } finally {
+          perfEnd(perfCharts);
+        }
       // Restore any saved zoom for this user (unless skipRestoreZoom is true)
       if (!skipRestoreZoom) {
         try {
@@ -5883,6 +6996,9 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           });
         }
       }
+      } finally {
+        perfEnd(perfUI);
+      }
     }
 
     function clearListActionActiveUI(){
@@ -5925,6 +7041,9 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     }
 
     async function switchUserSelection(nextUserKey){
+      if (isMetricsPartial && nextUserKey && (isTopTodayKey(nextUserKey) || !metrics.users?.[nextUserKey])) {
+        await refreshData({ skipPostListRebuild: false, skipRestoreZoom: true });
+      }
       const nextAction = normalizeFilterAction(currentVisibilitySource) || normalizeFilterAction(currentListActionId) || getSessionFilterAction();
       currentUserKey = nextUserKey;
       visibleSet.clear();
@@ -5948,10 +7067,12 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           await refreshUserUI({ preserveEmpty: true });
           persistVisibility();
         }
+        saveSessionCache();
         return;
       }
       await refreshUserUI({ preserveEmpty: true });
       persistVisibility();
+      saveSessionCache();
     }
 
     $('#userSelect').addEventListener('change', async (e)=>{
@@ -5960,6 +7081,16 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
 
     // Views type toggle pills
     let isUpdatingViewsType = false; // Prevent recursive calls
+    function syncViewsHeaders(type){
+      const prefix = type === 'unique' ? 'Viewers' : 'Total Views';
+      const overTimeTitle = $('#viewsOverTimeTitle');
+      if (overTimeTitle) overTimeTitle.textContent = `${prefix} over Time`;
+      const first24Title = $('#first24HoursTitle');
+      if (first24Title) first24Title.textContent = `${prefix} in First 24 Hours`;
+      const allOverTimeTitle = $('#allViewsOverTimeTitle');
+      if (allOverTimeTitle) allOverTimeTitle.textContent = `${prefix} over Time`;
+    }
+
     function updateViewsType(type){
       // Prevent accidental calls or recursive updates
       if (isUpdatingViewsType || viewsChartType === type) return;
@@ -5967,6 +7098,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       
       try {
         viewsChartType = type;
+        compareViewsChartType = type;
         const uniquePill = $('#uniqueViewsPill');
         const totalPill = $('#totalViewsPill');
         if (uniquePill && totalPill) {
@@ -5979,13 +7111,14 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           }
         }
       // Update chart labels
-      const yAxisLabel = type === 'unique' ? 'Unique Views' : 'Total Views';
-      const xAxisLabel = type === 'unique' ? 'Unique viewers' : 'Total viewers';
-      const tooltipLabel = type === 'unique' ? 'Unique' : 'Total';
+      const yAxisLabel = type === 'unique' ? 'Viewers' : 'Total Views';
+      const xAxisLabel = type === 'unique' ? 'Viewers' : 'Total Views';
+      const tooltipLabel = type === 'unique' ? 'Viewers' : 'Total Views';
       
       chart.setAxisLabels(xAxisLabel, tooltipLabel);
       viewsChart.setYAxisLabel(yAxisLabel);
       first24HoursChart.setYAxisLabel(yAxisLabel);
+      syncViewsHeaders(type);
       
       // Immediately clear data to prevent hovering over stale data from wrong mode
       chart.setData([]);
@@ -6007,6 +7140,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       e.stopPropagation();
       if (viewsChartType !== 'total') updateViewsType('total');
     });
+    syncViewsHeaders(viewsChartType);
 
 
     // Typeahead suggestions
@@ -6081,7 +7215,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       const suggestions = $('#compareSuggestions');
       if (!suggestions) return;
       const list = buildUserSuggestionItems(metrics, query)
-        .filter((item)=>!compareUsers.has(item.key));
+        .filter((item)=>!isTopTodayKey(item.key) && !compareUsers.has(item.key));
       if (!list.length) {
         suggestions.innerHTML = '';
         suggestions.style.display = 'none';
@@ -6152,6 +7286,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
 	    const COMB_MODE_LAST_RUN_KEY = 'combModeLastRun';
 	    let combModeEnabled = true; // Default to enabled
 	    let combModeDailyTimer = null;
+	    let combModeCheckedThisSession = false;
 
     async function loadExceptedUsers(){
       try {
@@ -6187,6 +7322,18 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
 	      } catch {}
 	    }
 
+    function closePurgeModal(opts = {}){
+      if (purgeModal) purgeModal.style.display = 'none';
+      if (purgeConfirmDialog) purgeConfirmDialog.style.display = 'none';
+      const shouldRunComb = opts.runCombOnClose && combModeCheckedThisSession && combModeEnabled;
+      combModeCheckedThisSession = false;
+      if (shouldRunComb) {
+        setTimeout(() => {
+          runCombModePurge();
+        }, 0);
+      }
+    }
+
     async function updateStorageSizeDisplay(){
       try {
         let bytes = null;
@@ -6206,7 +7353,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         // Convert to MB with 2 decimal places
         const mb = (bytes / (1024 * 1024)).toFixed(2);
         if (purgeStorageSize) {
-          purgeStorageSize.textContent = `Sora Creator Tools uses ${mb}MB of storage.\nExported data file will be larger because it's less compressed.`;
+          purgeStorageSize.textContent = `Sora Creator Tools uses ${mb}MB of storage.\nExported data file will be larger because it's less overlapping.`;
         }
       } catch (e) {
         console.error('[Dashboard] Failed to calculate storage size', e);
@@ -6222,16 +7369,31 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       await chrome.storage.local.set({ purgeLock: Date.now() });
       try {
         const now = Date.now();
-        const sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000);
         const sixtyMinutesMs = 60 * 60 * 1000;
         
         let purgedSnapshots = 0;
+        let purgedUsers = 0;
+        let purgedPosts = 0;
         metrics = await loadMetrics();
         
         // Process each user
         for (const [userKey, user] of Object.entries(metrics.users || {})){
+          if (userKey === 'unknown') {
+            const postCount = Object.keys(user?.posts || {}).length;
+            purgedUsers++;
+            purgedPosts += postCount;
+            delete metrics.users[userKey];
+            continue;
+          }
           // Skip excepted users
           if (exceptedUsers.has(userKey)) continue;
+          const postCount = Object.keys(user.posts || {}).length;
+          if (postCount <= 1) {
+            purgedUsers++;
+            purgedPosts += postCount;
+            delete metrics.users[userKey];
+            continue;
+          }
           
           // Process each post
           for (const [postId, post] of Object.entries(user.posts || {})){
@@ -6247,21 +7409,13 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
               const snap = sortedSnapshots[i];
               const snapTime = snap.t || 0;
               
-              // Always keep snapshots newer than 7 days
-              if (snapTime >= sevenDaysAgo) {
-                snapshotsToKeep.push(snap);
-                lastKeptTime = snapTime;
-                continue;
-              }
-              
-              // For snapshots older than 7 days, keep only if it's been at least 60 minutes
-              // since the last kept snapshot (creates "every-60-minute view")
-              // This "combs out" detailed/frequent snapshots, keeping only spaced-out ones
+              // Keep only if it's been at least 60 minutes since the last kept snapshot.
+              // This "combs out" detailed/frequent snapshots, keeping only spaced-out ones.
               if (lastKeptTime === null || (snapTime - lastKeptTime) >= sixtyMinutesMs) {
                 snapshotsToKeep.push(snap);
                 lastKeptTime = snapTime;
               } else {
-                // This snapshot is within 60 minutes of another, delete it (detailed data)
+                // This snapshot is within 60 minutes of another, delete it (detailed data).
                 purgedSnapshots++;
               }
             }
@@ -6272,8 +7426,8 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         }
         
         // Save purged metrics
-        if (purgedSnapshots > 0) {
-          await chrome.storage.local.set({ metrics });
+        if (purgedSnapshots > 0 || purgedUsers > 0) {
+          await saveMetrics(metrics, { userKeys: Object.keys(metrics.users || {}) });
           // Update last run time
           await chrome.storage.local.set({ [COMB_MODE_LAST_RUN_KEY]: now });
           // Update storage size display if purge modal is open
@@ -6412,14 +7566,12 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     }
 
     $('#purgeModalClose').addEventListener('click', ()=>{
-      purgeModal.style.display = 'none';
-      purgeConfirmDialog.style.display = 'none';
+      closePurgeModal({ runCombOnClose: true });
     });
 
     purgeModal.addEventListener('mousedown', (e)=>{
       if (e.target === purgeModal) {
-        purgeModal.style.display = 'none';
-        purgeConfirmDialog.style.display = 'none';
+        closePurgeModal({ runCombOnClose: true });
       }
     });
 
@@ -6431,7 +7583,10 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
 	    const combModeCheckbox = $('#combModeCheckbox');
 	    if (combModeCheckbox) {
 	      combModeCheckbox.addEventListener('change', async (e) => {
-	        combModeEnabled = e.target.checked;
+	        const nextChecked = e.target.checked;
+	        const wasChecked = combModeEnabled;
+	        combModeEnabled = nextChecked;
+	        if (nextChecked && !wasChecked) combModeCheckedThisSession = true;
 	        await saveCombModePreference();
 	        // Reschedule daily timer based on new preference
 	        scheduleCombModeDaily();
@@ -6548,6 +7703,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     document.addEventListener('click', (e)=>{ if (!e.target.closest('.user-picker-exceptions')) $('#exceptionsSuggestions').style.display='none'; });
 
     $('#purgeMenu').addEventListener('click', async ()=>{
+      combModeCheckedThisSession = false;
       purgeModal.style.display = 'block';
       // Load saved exceptions
       const saved = await loadExceptedUsers();
@@ -6691,7 +7847,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         
         
         // Save purged metrics
-        await chrome.storage.local.set({ metrics });
+        await saveMetrics(metrics, { userKeys: Object.keys(metrics.users || {}) });
         
         // Refresh UI
         metrics = await loadMetrics();
@@ -6709,8 +7865,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         updateBestTimeToPostSection();
         
         // Close modals
-        purgeModal.style.display = 'none';
-        purgeConfirmDialog.style.display = 'none';
+        closePurgeModal({ runCombOnClose: true });
         
         // Update storage size display
         await updateStorageSizeDisplay();
@@ -6746,16 +7901,18 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           metrics = await loadMetrics();
           const users = metrics?.users || {};
           let removedAny = false;
+          const affectedKeys = new Set();
           for (const [uKey, user] of Object.entries(users)){
             if (!user?.posts || !user.posts[pid]) continue;
             delete user.posts[pid];
             removedAny = true;
+            affectedKeys.add(uKey);
             if (Object.keys(user.posts).length === 0){
               delete users[uKey];
             }
           }
           if (removedAny) {
-            await chrome.storage.local.set({ metrics });
+            await saveMetrics(metrics, { userKeys: Array.from(affectedKeys) });
             visibleSet.delete(pid);
             const prev = currentUserKey;
             const def = buildUserOptions(metrics);
@@ -6780,6 +7937,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     }
 
     const refreshData = async (opts = {}) => {
+      const perfRefresh = perfStart('refreshData total');
       const isAutoRefresh = !!opts.autoRefresh;
       const skipRestoreZoom = !!opts.skipRestoreZoom || isAutoRefresh;
       const userSelect = $('#userSelect');
@@ -6793,6 +7951,16 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         allLikes: safeGetDomain(allLikesChart),
         cameos: safeGetDomain(cameosChart),
       } : null;
+      if (isAutoRefresh) {
+        const perfMeta = perfStart('storage.get metricsUpdatedAt');
+        const nextUpdatedAt = await getMetricsUpdatedAt();
+        perfEnd(perfMeta);
+      if (!isMetricsPartial && nextUpdatedAt && lastMetricsUpdatedAt && nextUpdatedAt === lastMetricsUpdatedAt) {
+        perfEnd(perfRefresh);
+        perfFlush('auto refresh', PERF_AUTO_ENABLED);
+        return;
+      }
+      }
       // capture zoom states
       const zScatter = chart.getZoom();
       const zViews = viewsChart.getZoom();
@@ -6801,7 +7969,10 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       const zCameos = cameosChart.getZoom();
       const zFollowers = followersChart.getZoom();
       const zViewsAll = allViewsChart.getZoom();
+      const perfLoad = perfStart('load metrics');
       metrics = await loadMetrics();
+      isMetricsPartial = false;
+      perfEnd(perfLoad);
       if (!isAutoRefresh) {
         const prev = currentUserKey; const def = buildUserOptions(metrics);
         if (!(metrics.users[prev] || isTopTodayKey(prev))) currentUserKey = def;
@@ -6810,7 +7981,6 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         userSelect.scrollTop = userSelectScrollTop;
       }
       try { await chrome.storage.local.set({ lastUserKey: currentUserKey }); } catch {}
-      updateBestTimeToPostSection();
       
       // Clean up compare users that no longer exist
       for (const key of Array.from(compareUsers)){
@@ -6818,8 +7988,11 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       }
       renderComparePills();
       renderCustomFilters(currentUserKey);
+      const perfRefreshUI = perfStart('refreshUserUI await');
       await refreshUserUI({ skipPostListRebuild: !!opts.skipPostListRebuild, skipRestoreZoom, autoRefresh: isAutoRefresh });
+      perfEnd(perfRefreshUI);
       updateBestTimeToPostSection();
+      saveSessionCache();
       // restore zoom states
       try { if (zScatter) chart.setZoom(zScatter); } catch {}
       try { if (zViews) viewsChart.setZoom(zViews); } catch {}
@@ -6837,6 +8010,11 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         expandZoomRightIfAtEdge(allLikesChart, prevDomains.allLikes, safeGetDomain(allLikesChart));
         expandZoomRightIfAtEdge(cameosChart, prevDomains.cameos, safeGetDomain(cameosChart));
       }
+      if (!isAutoRefresh) {
+        saveSessionCache();
+      }
+      perfEnd(perfRefresh);
+      perfFlush(isAutoRefresh ? 'auto refresh' : 'refresh', !isAutoRefresh || PERF_AUTO_ENABLED);
     };
 
     const refreshBtn = $('#refresh');
@@ -6883,6 +8061,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       try { chrome.storage.local.set({ zoomStates }); } catch {}
     }
     window.addEventListener('beforeunload', persistZoom);
+    window.addEventListener('beforeunload', saveSessionCache);
 
     function setListActionActive(activeId){
       currentListActionId = activeId || null;
@@ -6897,7 +8076,6 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       if (activeId !== 'custom') setCustomFilterActive(null);
     }
 
-      $('#resetZoom').addEventListener('click', ()=>{ chart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom(); refreshUserUI({ skipRestoreZoom: true }); });
       $('#showAll').addEventListener('click', ()=>{
         const activeCustomId = getCustomFilterId(currentVisibilitySource);
         currentVisibilitySource = 'showAll';
@@ -7074,6 +8252,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           };
         });
         const sorted = mapped.sort((a,b)=>{
+          if (!a || !b) return !a && !b ? 0 : (!a ? 1 : -1);
           const dl = b.likes - a.likes;
           if (dl !== 0) return dl;
           const dv = b.views - a.views;
@@ -7104,6 +8283,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           };
         });
         const sorted = mapped.sort((a,b)=>{
+          if (!a || !b) return !a && !b ? 0 : (!a ? 1 : -1);
           const dl = b.likes - a.likes;
           if (dl !== 0) return dl;
           const dv = b.views - a.views;
@@ -7302,17 +8482,132 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       const didClick = triggerFilterClick(initAction);
       if (!didClick) {
         applyUserFilterState(currentUserKey, initialUser, initAction);
-        refreshUserUI({ preserveEmpty: true });
+      }
+      if (isMetricsPartial) {
+        await refreshUserUI({ preserveEmpty: true });
+      } else {
+        await nextPaint();
+        await refreshUserUI({ preserveEmpty: true });
       }
     } else {
-      refreshUserUI();
+      if (isMetricsPartial) {
+        await refreshUserUI();
+      } else {
+        await nextPaint();
+        await refreshUserUI();
+      }
     }
+
+    try {
+      const st = await prefsPromise;
+      const prevUserKey = currentUserKey;
+      if (st.lastUserKey && (metrics.users[st.lastUserKey] || isTopTodayKey(st.lastUserKey))) currentUserKey = st.lastUserKey;
+      zoomStates = st.zoomStates || {};
+      if (st.lastFilterAction && !lastFilterAction) lastFilterAction = st.lastFilterAction;
+      customVisibilityByUser = (function(raw){
+        const out = {};
+        if (!raw || typeof raw !== 'object') return out;
+        for (const [userKey, entry] of Object.entries(raw)){
+          if (Array.isArray(entry)) out[userKey] = { ids: entry };
+          else if (entry && typeof entry === 'object'){
+            const ids = Array.isArray(entry.ids) ? entry.ids : [];
+            out[userKey] = { ids };
+          }
+        }
+        return out;
+      })(st.customVisibilityByUser);
+      const storageFilters = (function(raw){
+        const out = {};
+        if (!raw || typeof raw !== 'object') return out;
+        for (const [userKey, entry] of Object.entries(raw)){
+          const filters = Array.isArray(entry?.filters) ? entry.filters : [];
+          const normalized = [];
+          for (const f of filters){
+            if (!f || typeof f !== 'object') continue;
+            const id = typeof f.id === 'string' && f.id ? f.id : null;
+            const name = typeof f.name === 'string' && f.name ? f.name : null;
+            const ids = Array.isArray(f.ids) ? f.ids.filter(Boolean) : [];
+            if (!id || !name) continue;
+            normalized.push({ id, name, ids });
+          }
+          out[userKey] = { filters: normalized };
+        }
+        return out;
+      })(st.customFiltersByUser);
+      const sessionFilters = (function(raw){
+        const out = {};
+        if (!raw || typeof raw !== 'object') return out;
+        for (const [userKey, entry] of Object.entries(raw)){
+          const filters = Array.isArray(entry?.filters) ? entry.filters : [];
+          const normalized = [];
+          for (const f of filters){
+            if (!f || typeof f !== 'object') continue;
+            const id = typeof f.id === 'string' && f.id ? f.id : null;
+            const name = typeof f.name === 'string' && f.name ? f.name : null;
+            const ids = Array.isArray(f.ids) ? f.ids.filter(Boolean) : [];
+            if (!id || !name) continue;
+            normalized.push({ id, name, ids });
+          }
+          out[userKey] = { filters: normalized };
+        }
+        return out;
+      })(sessionCustomFiltersByUser);
+      const localFilters = (function(raw){
+        const out = {};
+        if (!raw || typeof raw !== 'object') return out;
+        for (const [userKey, entry] of Object.entries(raw)){
+          const filters = Array.isArray(entry?.filters) ? entry.filters : [];
+          const normalized = [];
+          for (const f of filters){
+            if (!f || typeof f !== 'object') continue;
+            const id = typeof f.id === 'string' && f.id ? f.id : null;
+            const name = typeof f.name === 'string' && f.name ? f.name : null;
+            const ids = Array.isArray(f.ids) ? f.ids.filter(Boolean) : [];
+            if (!id || !name) continue;
+            normalized.push({ id, name, ids });
+          }
+          out[userKey] = { filters: normalized };
+        }
+        return out;
+      })(localCustomFiltersByUser);
+      customFiltersByUser = storageFilters;
+      for (const [userKey, entry] of Object.entries(sessionFilters)){
+        const existing = storageFilters[userKey];
+        const existingCount = Array.isArray(existing?.filters) ? existing.filters.length : 0;
+        const sessionCount = Array.isArray(entry?.filters) ? entry.filters.length : 0;
+        if (!existing || sessionCount > existingCount) {
+          customFiltersByUser[userKey] = entry;
+        }
+      }
+      for (const [userKey, entry] of Object.entries(localFilters)){
+        const existing = customFiltersByUser[userKey];
+        const existingCount = Array.isArray(existing?.filters) ? existing.filters.length : 0;
+        const localCount = Array.isArray(entry?.filters) ? entry.filters.length : 0;
+        if (!existing || localCount > existingCount) {
+          customFiltersByUser[userKey] = entry;
+        }
+      }
+      if (currentUserKey !== prevUserKey) {
+        await switchUserSelection(currentUserKey);
+      } else {
+        refreshUserUI({ preserveEmpty: true, skipRestoreZoom: true });
+      }
+    } catch {}
+    if (!isMetricsPartial) {
+      saveSessionCache();
+    }
+    if (isMetricsPartial && !bestTimeData) {
+      refreshData({ skipPostListRebuild: true, skipRestoreZoom: true })
+        .catch((err) => console.error('[Dashboard] best time hydrate failed', err));
+    }
+    await ultraModePromise;
     renderCustomFilters(currentUserKey);
     updateBestTimeToPostSection();
     initBestTimeTabs();
     initBestTimeGatherLink();
+    initBestTimeInfoTooltip();
     initMetricsGatherLink();
-    const AUTO_REFRESH_MS = 10000;
+    const AUTO_REFRESH_MS = 30000;
     let autoRefreshInFlight = false;
     setInterval(() => {
       if (document.hidden) return;
@@ -7324,10 +8619,17 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           autoRefreshInFlight = false;
         });
     }, AUTO_REFRESH_MS);
+    perfEnd(perfBoot);
+    perfFlush('boot');
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    Promise.resolve(main()).finally(() => {
+    const bootCache = loadInstantCache();
+    const bootApplied = hydrateBestTimeFromCache(bootCache);
+    if (bootApplied) {
+      document.documentElement.classList.remove('is-booting');
+    }
+    Promise.resolve(main(bootCache)).finally(() => {
       document.documentElement.classList.remove('is-booting');
     });
   }, { once:true });

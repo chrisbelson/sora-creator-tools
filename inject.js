@@ -3302,14 +3302,10 @@
     return best || last || null;
   }
 
-  let _metricsInFlight = null,
-    _metricsCache = null,
-    _metricsTs = 0;
+  let _metricsInFlight = null;
 
   async function requestStoredMetrics() {
-    const now = Date.now();
     if (_metricsInFlight) return _metricsInFlight;
-    if (_metricsCache && now - _metricsTs < 1000) return _metricsCache; // 1s cache
 
     _metricsInFlight = new Promise((resolve) => {
       const token = Math.random().toString(36).slice(2);
@@ -3317,19 +3313,18 @@
         const d = ev?.data;
         if (!d || d.__sora_uv__ !== true || d.type !== 'metrics_response' || d.req !== token) return;
         window.removeEventListener('message', onReply);
+        const metrics = d.metrics || { users: {} };
         _metricsInFlight = null;
-        _metricsCache = d.metrics || { users: {} };
-        _metricsTs = Date.now();
         
         // Debug: Check if duration is in the stored metrics
         if (DEBUG.analyze) {
-          const sampleUser = Object.values(_metricsCache.users || {})[0];
+          const sampleUser = Object.values(metrics.users || {})[0];
           if (sampleUser && sampleUser.posts) {
             const samplePost = Object.values(sampleUser.posts)[0];
             if (samplePost) {
               dlog('analyze', 'metrics loaded', {
-                userCount: Object.keys(_metricsCache.users || {}).length,
-                postCount: Object.values(_metricsCache.users || {}).reduce((sum, u) => sum + Object.keys(u.posts || {}).length, 0),
+                userCount: Object.keys(metrics.users || {}).length,
+                postCount: Object.values(metrics.users || {}).reduce((sum, u) => sum + Object.keys(u.posts || {}).length, 0),
                 samplePostHasDuration: !!samplePost.duration,
                 samplePostDuration: samplePost.duration,
                 sampleSnapshotHasDuration: samplePost.snapshots && samplePost.snapshots.length > 0 ? !!samplePost.snapshots[0].duration : false
@@ -3338,7 +3333,7 @@
           }
         }
         
-        resolve(_metricsCache);
+        resolve(metrics);
       };
       window.addEventListener('message', onReply);
       window.postMessage({ __sora_uv__: true, type: 'metrics_request', req: token }, '*');
@@ -3346,7 +3341,7 @@
         // timeout safety
         window.removeEventListener('message', onReply);
         _metricsInFlight = null;
-        resolve(_metricsCache || { users: {} });
+        resolve({ users: {} });
       }, 2000);
     });
     return _metricsInFlight;

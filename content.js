@@ -7,6 +7,7 @@
   const p = String(location.pathname || '');
   const isDraftDetail = p === '/d' || p.startsWith('/d/');
   const ULTRA_MODE_KEY = 'SCT_ULTRA_MODE_V1';
+  const METRICS_USERS_INDEX_KEY = 'metricsUsersIndex';
 
   function writeUltraModeToLocalStorage(enabled) {
     try {
@@ -72,7 +73,7 @@
   (function () {
   const PENDING = [];
   let flushTimer = null;
-  let metricsCache = { users: {} }; // in-memory fallback so Analyze still works if storage is unavailable
+  const metricsFallback = { users: {} };
 
   // Debug toggles
   const DEBUG = { storage: false, thumbs: false };
@@ -108,13 +109,12 @@
       (async () => {
         try {
           const { metrics: rawMetrics } = await chrome.storage.local.get('metrics');
-          const metrics = normalizeMetrics(rawMetrics) || metricsCache || { users: {} };
-          metricsCache = metrics;
+          const metrics = normalizeMetrics(rawMetrics);
           // Reply back into the page
           window.postMessage({ __sora_uv__: true, type: 'metrics_response', req, metrics }, '*');
         } catch {
-          // Fall back to in-memory cache if storage is unavailable
-          window.postMessage({ __sora_uv__: true, type: 'metrics_response', req, metrics: metricsCache || { users:{} } }, '*');
+          // Fall back to an empty payload if storage is unavailable
+          window.postMessage({ __sora_uv__: true, type: 'metrics_response', req, metrics: metricsFallback }, '*');
         }
       })();
     }
@@ -208,10 +208,9 @@
   
       // Take current items
       const items = PENDING.splice(0, PENDING.length);
-      
       try {
         const { metrics: rawMetrics } = await chrome.storage.local.get('metrics');
-        const metrics = normalizeMetrics(rawMetrics || metricsCache);
+        const metrics = normalizeMetrics(rawMetrics);
         dlog('storage', 'flush begin', { count: items.length });
         for (const snap of items) {
           const userKey = snap.userKey || snap.pageUserKey || 'unknown';
@@ -343,9 +342,18 @@
           }
         }
         try {
-          await chrome.storage.local.set({ metrics });
-          metricsCache = metrics; // keep a hot copy for quick responses even if storage hiccups
-          
+          const metricsUpdatedAt = Date.now();
+          const usersIndex = Object.entries(metrics.users || {}).map(([key, user])=>({
+            key,
+            handle: user?.handle || null,
+            id: user?.id || null,
+            postCount: Object.keys(user?.posts || {}).length
+          }));
+          await chrome.storage.local.set({
+            metrics,
+            metricsUpdatedAt,
+            [METRICS_USERS_INDEX_KEY]: usersIndex
+          });
           // Debug: Verify duration is in the metrics we just saved
           if (DEBUG.storage) {
             const sampleUser = Object.values(metrics.users || {})[0];
