@@ -120,6 +120,20 @@
   const BEST_TIME_CACHE_KEY = 'SCT_DASHBOARD_BEST_TIME_V2';
   const BEST_TIME_PREFS_KEY = 'SCT_DASHBOARD_BEST_TIME_PREFS_V1';
   const VIEWS_TYPE_STORAGE_KEY = 'SCT_DASHBOARD_VIEWS_TYPE_V1';
+  const CHART_MODE_STORAGE_KEY = 'SCT_DASHBOARD_CHART_MODE_V1';
+  const STACKED_WINDOW_STORAGE_KEYS = {
+    interaction: 'SCT_DASHBOARD_STACKED_WINDOW_INTERACTION_V1',
+    views: 'SCT_DASHBOARD_STACKED_WINDOW_VIEWS_V1',
+    viewsPerPerson: 'SCT_DASHBOARD_STACKED_WINDOW_VPP_V1'
+  };
+  const LEGACY_CHART_MODE_KEYS = {
+    interaction: 'SCT_DASHBOARD_INTERACTION_MODE_V1',
+    views: 'SCT_DASHBOARD_VIEWS_MODE_V1',
+    viewsPerPerson: 'SCT_DASHBOARD_VIEWS_PER_PERSON_MODE_V1'
+  };
+  const INTERACTION_RATE_DEFAULT_ZOOM_Y_MAX = 15;
+  const STACKED_WINDOW_MINUTES_DEFAULT = 24 * 60;
+  const STACKED_WINDOW_MINUTES_MAX = 15 * 24 * 60;
   let metrics = { users: {} };
   let lastMetricsUpdatedAt = 0;
   let usersIndex = null;
@@ -592,6 +606,32 @@
     if (!normalized) return;
     try { localStorage.setItem(VIEWS_TYPE_STORAGE_KEY, normalized); } catch {}
     try { chrome.storage.local.set({ [VIEWS_TYPE_STORAGE_KEY]: normalized }); } catch {}
+  }
+
+  function normalizeChartMode(raw){
+    return raw === 'linear' || raw === 'stacked' ? raw : null;
+  }
+
+  function loadChartMode(key){
+    try { return normalizeChartMode(localStorage.getItem(key)); } catch { return null; }
+  }
+
+  function saveChartMode(key, mode){
+    const normalized = normalizeChartMode(mode);
+    if (!normalized) return;
+    try { localStorage.setItem(key, normalized); } catch {}
+    try { chrome.storage.local.set({ [key]: normalized }); } catch {}
+  }
+
+  function resolveLegacyChartMode(legacyModes){
+    const modes = [
+      normalizeChartMode(legacyModes?.interaction),
+      normalizeChartMode(legacyModes?.views),
+      normalizeChartMode(legacyModes?.viewsPerPerson)
+    ].filter(Boolean);
+    if (!modes.length) return null;
+    const first = modes[0];
+    return modes.every((mode)=>mode === first) ? first : null;
   }
 
   let lastBestTimeUpdate = 0;
@@ -3648,10 +3688,10 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       canvas.width = Math.floor(W*DPR); canvas.height = Math.floor(H*DPR); ctx.setTransform(DPR,0,0,DPR,0,0);
       draw();
     }
-    const state = { series:[], x:[0,1], y:[0,1], zoomX:null, zoomY:null, hover:null, hoverSeries:null, comparisonLine:null, timeWindowMinutes:1440 };
+    const state = { series:[], x:[0,1], y:[0,1], zoomX:null, zoomY:null, hover:null, hoverSeries:null, comparisonLine:null, timeWindowMinutes:STACKED_WINDOW_MINUTES_DEFAULT };
     let hoverCb = null;
 
-    function setData(series, timeWindowMinutes = 1440){
+    function setData(series, timeWindowMinutes = STACKED_WINDOW_MINUTES_DEFAULT){
       state.timeWindowMinutes = timeWindowMinutes;
       // Filter and transform points: x = minutes since post creation, y = views
       state.series = series.map(s=>({
@@ -3695,8 +3735,16 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     }
     function fmtTime(minutes){
       if (minutes < 60) return `${Math.round(minutes)}m`;
-      const hours = Math.floor(minutes / 60);
-      const mins = Math.round(minutes % 60);
+      const totalMinutes = Math.round(minutes);
+      const days = Math.floor(totalMinutes / 1440);
+      const hours = Math.floor((totalMinutes % 1440) / 60);
+      const mins = totalMinutes % 60;
+      if (days > 0) {
+        if (hours === 0 && mins === 0) return `${days}d`;
+        if (mins === 0) return `${days}d ${hours}h`;
+        if (hours === 0) return `${days}d ${mins}m`;
+        return `${days}d ${hours}h ${mins}m`;
+      }
       if (mins === 0) return `${hours}h`;
       return `${hours}h ${mins}m`;
     }
@@ -5295,6 +5343,8 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     const searchInput = $('#search');
     const suggestions = $('#suggestions');
     let zoomStates = {};
+    let zoomStatesLoaded = false;
+    const defaultInteractionZoomApplied = new Set();
     let customVisibilityByUser = {};
     let customFiltersByUser = {};
     let customFiltersReloaded = false;
@@ -5330,16 +5380,46 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       }
     }
     const prefsPromise = chrome.storage.local
-      .get(['lastUserKey', 'zoomStates', 'customVisibilityByUser', 'customFiltersByUser', 'lastFilterAction', 'lastFilterActionByUser', VIEWS_TYPE_STORAGE_KEY, BEST_TIME_PREFS_KEY])
+      .get([
+        'lastUserKey',
+        'zoomStates',
+        'customVisibilityByUser',
+        'customFiltersByUser',
+        'lastFilterAction',
+        'lastFilterActionByUser',
+        VIEWS_TYPE_STORAGE_KEY,
+        BEST_TIME_PREFS_KEY,
+        CHART_MODE_STORAGE_KEY,
+        LEGACY_CHART_MODE_KEYS.interaction,
+        LEGACY_CHART_MODE_KEYS.views,
+        LEGACY_CHART_MODE_KEYS.viewsPerPerson
+      ])
       .catch(() => ({}));
     syncUserSelectionUI();
     const initialViewsChartType = loadViewsChartType();
+    const initialChartsMode = loadChartMode(CHART_MODE_STORAGE_KEY);
+    const legacyChartModes = {
+      interaction: loadChartMode(LEGACY_CHART_MODE_KEYS.interaction),
+      views: loadChartMode(LEGACY_CHART_MODE_KEYS.views),
+      viewsPerPerson: loadChartMode(LEGACY_CHART_MODE_KEYS.viewsPerPerson)
+    };
+    const legacyChartsMode = resolveLegacyChartMode(legacyChartModes);
     let viewsChartType = initialViewsChartType || 'total'; // 'unique' or 'total'
     let viewsChartTypeLoaded = !!initialViewsChartType;
     let compareViewsChartType = viewsChartType;
     const viewsAxisLabel = viewsChartType === 'unique' ? 'Viewers' : 'Total Views';
+    const shouldPersistLegacyChartMode = !initialChartsMode && !!legacyChartsMode;
+    let chartsMode = initialChartsMode || legacyChartsMode || 'linear';
+    let chartModeLoaded = !!initialChartsMode || !!legacyChartsMode;
     let chart = makeChart($('#chart'), viewsAxisLabel, viewsAxisLabel);
+    let interactionRateStackedChart = makeFirst24HoursChart(
+      $('#interactionRateStackedChart'),
+      '#interactionRateStackedTooltip',
+      'Interaction Rate',
+      (v) => `${Number(v).toFixed(1)}%`
+    );
     let viewsPerPersonChart = makeFirst24HoursChart($('#viewsPerPersonChart'), '#viewsPerPersonTooltip', 'Views Per Person', (v) => Number(v).toFixed(2));
+    let viewsPerPersonTimeChart = makeTimeChart($('#viewsPerPersonTimeChart'), '#viewsPerPersonTimeTooltip', 'Views Per Person', (v) => Number(v).toFixed(2));
     let viewsChart = makeTimeChart($('#viewsChart'), '#viewsTooltip', viewsAxisLabel, fmt);
     let first24HoursChart = makeFirst24HoursChart($('#first24HoursChart'), '#first24HoursTooltip', viewsAxisLabel, fmt);
     const followersChart = makeFollowersChart($('#followersChart'));
@@ -7246,10 +7326,11 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     // Function to update first 24 hours chart
     function updateFirst24HoursChart(timeWindowMinutes){
       const user = resolveUserForKey(metrics, currentUserKey);
-      if (!user) return;
+      if (!user) return false;
       const colorFor = makeColorMap(user);
       const isVirtual = isVirtualUser(user);
       const useUnique = viewsChartType === 'unique';
+      let hasPoints = false;
       const f24Series = (function(){
         const out=[]; for (const [pid,p] of Object.entries(user.posts||{})){
           if (!visibleSet.has(pid)) continue;
@@ -7259,6 +7340,12 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
             const t=s.t; 
             const v=useUnique ? s.uv : s.views; 
             if (t!=null && v!=null) pts.push({ x:Number(t), y:Number(v), t:Number(t) }); 
+          }
+          if (!hasPoints && pts.length) {
+            hasPoints = pts.some((pt)=>{
+              const minutesSinceCreation = (pt.t - postTime) / (60 * 1000);
+              return minutesSinceCreation >= 0 && minutesSinceCreation <= timeWindowMinutes;
+            });
           }
           const owner = isVirtual ? (p?.ownerHandle || '') : (user?.handle || '');
           const color=colorFor(pid); const label = buildPostLabel({ ...p, id: pid }, owner);
@@ -7274,13 +7361,15 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         // For now, we'll just update the data and the chart will use the label from when it was created
         // We'll need to recreate the chart or modify makeFirst24HoursChart to accept label updates
       }
+      return hasPoints;
     }
 
     function updateViewsPerPersonChart(timeWindowMinutes){
       const user = resolveUserForKey(metrics, currentUserKey);
-      if (!user) return;
+      if (!user) return false;
       const colorFor = makeColorMap(user);
       const isVirtual = isVirtualUser(user);
+      let hasPoints = false;
       const vppSeries = (function(){
         const out=[]; for (const [pid,p] of Object.entries(user.posts||{})){
           if (!visibleSet.has(pid)) continue;
@@ -7296,12 +7385,80 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
               pts.push({ x:Number(t), y:vpp, t:Number(t) }); 
             }
           }
+          if (!hasPoints && pts.length) {
+            hasPoints = pts.some((pt)=>{
+              const minutesSinceCreation = (pt.t - postTime) / (60 * 1000);
+              return minutesSinceCreation >= 0 && minutesSinceCreation <= timeWindowMinutes;
+            });
+          }
           const owner = isVirtual ? (p?.ownerHandle || '') : (user?.handle || '');
           const color=colorFor(pid); const label = buildPostLabel({ ...p, id: pid }, owner);
           // Include all posts with post_time, even if they have no snapshots or no snapshots in the time window
           out.push({ id: pid, label, color, points: pts, url: absUrl(p.url, pid), postTime: postTime }); }
         return out; })();
       viewsPerPersonChart.setData(vppSeries, timeWindowMinutes);
+      return hasPoints;
+    }
+
+    function updateViewsPerPersonTimeChart(){
+      const user = resolveUserForKey(metrics, currentUserKey);
+      if (!user) return;
+      const colorFor = makeColorMap(user);
+      const isVirtual = isVirtualUser(user);
+      const vppSeries = (function(){
+        const out=[]; for (const [pid,p] of Object.entries(user.posts||{})){
+          if (!visibleSet.has(pid)) continue;
+          const pts=[]; for (const s of (p.snapshots||[])){
+            const t=s.t;
+            const totalViews = num(s.views);
+            const uniqueViews = num(s.uv);
+            if (t!=null && totalViews!=null && uniqueViews!=null && uniqueViews > 0) {
+              const vpp = Number((totalViews / uniqueViews).toFixed(2));
+              pts.push({ x:Number(t), y:vpp, t:Number(t) });
+            }
+          }
+          if (!pts.length) continue;
+          const owner = isVirtual ? (p?.ownerHandle || '') : (user?.handle || '');
+          const color = colorFor(pid);
+          const label = buildPostLabel({ ...p, id: pid }, owner);
+          out.push({ id: pid, label, color, points: pts, url: absUrl(p.url, pid) });
+        }
+        return out;
+      })();
+      viewsPerPersonTimeChart.setData(vppSeries);
+    }
+
+    function updateInteractionRateStackedChart(timeWindowMinutes){
+      const user = resolveUserForKey(metrics, currentUserKey);
+      if (!user) return false;
+      const colorFor = makeColorMap(user);
+      const isVirtual = isVirtualUser(user);
+      let hasPoints = false;
+      const stackedSeries = (function(){
+        const out=[]; for (const [pid,p] of Object.entries(user.posts||{})){
+          if (!visibleSet.has(pid)) continue;
+          const postTime = getPostTimeStrict(p) || getPostTimeForRecency(p);
+          if (!postTime) continue;
+          const pts=[]; for (const s of (p.snapshots||[])){
+            const t=s.t;
+            const rate = interactionRate(s);
+            if (t!=null && rate!=null) pts.push({ x:Number(t), y:Number(rate), t:Number(t) });
+          }
+          if (!hasPoints && pts.length) {
+            hasPoints = pts.some((pt)=>{
+              const minutesSinceCreation = (pt.t - postTime) / (60 * 1000);
+              return minutesSinceCreation >= 0 && minutesSinceCreation <= timeWindowMinutes;
+            });
+          }
+          const owner = isVirtual ? (p?.ownerHandle || '') : (user?.handle || '');
+          const color=colorFor(pid);
+          const label = buildPostLabel({ ...p, id: pid }, owner);
+          out.push({ id: pid, label, color, points: pts, url: absUrl(p.url, pid), postTime: postTime });
+        }
+        return out;
+      })();
+      interactionRateStackedChart.setData(stackedSeries, timeWindowMinutes);
+      return hasPoints;
     }
 
     function updateStaleButtonCount(user){
@@ -7488,7 +7645,14 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           updateMetricsGatherNote(currentUserKey, null);
           setListActionActive('showAll');
           currentVisibilitySource = 'showAll';
-          buildPostsList(null, ()=>getPaletteColor(0), new Set()); chart.setData([]); return;
+          buildPostsList(null, ()=>getPaletteColor(0), new Set());
+          chart.setData([]);
+          interactionRateStackedChart.setData([]);
+          viewsChart.setData([]);
+          first24HoursChart.setData([]);
+          viewsPerPersonChart.setData([]);
+          viewsPerPersonTimeChart.setData([]);
+          return;
         }
         // No precompute needed for IR; use latest available remix count only for cards
         // Integrity check: remove posts incorrectly attributed to this user
@@ -7622,9 +7786,16 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
             for (const pid of nextSet) visibleSet.add(pid);
           }
         }
-        const listOpts = { 
+        const listOpts = {
           activeActionId: listActionId,
-          onHover: (pid)=> { chart.setHoverSeries(pid); viewsChart.setHoverSeries(pid); first24HoursChart.setHoverSeries(pid); viewsPerPersonChart.setHoverSeries(pid); },
+          onHover: (pid)=> {
+            chart.setHoverSeries(pid);
+            interactionRateStackedChart.setHoverSeries(pid);
+            viewsChart.setHoverSeries(pid);
+            first24HoursChart.setHoverSeries(pid);
+            viewsPerPersonChart.setHoverSeries(pid);
+            viewsPerPersonTimeChart.setHoverSeries(pid);
+          },
           onPurge: (pid, snippet) => showPostPurgeConfirm(snippet, pid)
         };
         const perfList = perfStart('render posts list');
@@ -7647,6 +7818,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
               .filter(s=>visibleSet.has(s.id))
               .map(s=>({ ...s, url: absUrl(user.posts?.[s.id]?.url, s.id) }));
             chart.setData(series);
+            updateInteractionRateStackedChart(parseInt($('#interactionRateSlider')?.value) || STACKED_WINDOW_MINUTES_DEFAULT);
             // Time chart: cumulative views by time
             const vSeries = (function(){
               const out=[]; for (const [pid,p] of Object.entries(user.posts||{})){
@@ -7664,10 +7836,12 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
               }
               return out; })();
             viewsChart.setData(vSeries);
+            // Views Per Person time chart: ratio over absolute time
+            updateViewsPerPersonTimeChart();
             // Views Per Person chart: total views / unique views over time since post creation
-            updateViewsPerPersonChart(parseInt($('#viewsPerPersonSlider')?.value) || 1440);
+            updateViewsPerPersonChart(parseInt($('#viewsPerPersonSlider')?.value) || STACKED_WINDOW_MINUTES_DEFAULT);
             // First 24 hours chart: views over time since post creation
-            updateFirst24HoursChart(parseInt($('#first24HoursSlider')?.value) || 1440);
+            updateFirst24HoursChart(parseInt($('#first24HoursSlider')?.value) || STACKED_WINDOW_MINUTES_DEFAULT);
             // Only update compare charts if no compare users are selected
             if (compareUsers.size === 0){
               // Update unfiltered totals cards for single user
@@ -7781,7 +7955,9 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         try {
           const z = zoomStates[currentUserKey] || {};
           if (z.scatter) chart.setZoom(z.scatter);
+          if (z.interactionStacked) interactionRateStackedChart.setZoom(z.interactionStacked);
           if (z.viewsPerPerson) viewsPerPersonChart.setZoom(z.viewsPerPerson);
+          if (z.viewsPerPersonTime) viewsPerPersonTimeChart.setZoom(z.viewsPerPersonTime);
           if (z.views) viewsChart.setZoom(z.views);
           if (z.first24Hours) first24HoursChart.setZoom(z.first24Hours);
           if (z.likesAll) allLikesChart.setZoom(z.likesAll);
@@ -7790,12 +7966,20 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           if (z.viewsAll) allViewsChart.setZoom(z.viewsAll);
         } catch {}
       }
+      applyDefaultInteractionRateZoom(currentUserKey);
       // Sync chart hover back to list - use current chart instances
-      const currentChart = chart;
-      const currentViewsPerPersonChart = viewsPerPersonChart;
-      const currentViewsChart = viewsChart;
-      const currentFirst24HoursChart = first24HoursChart;
-      currentChart.onHover((pid)=>{
+      const hoverCharts = [
+        chart,
+        interactionRateStackedChart,
+        viewsPerPersonChart,
+        viewsPerPersonTimeChart,
+        viewsChart,
+        first24HoursChart
+      ];
+      const syncHoverCharts = (pid)=>{
+        hoverCharts.forEach((c)=> c.setHoverSeries(pid));
+      };
+      const handleChartHover = (pid)=>{
         const wrap = $('#posts');
         if (!wrap) return;
         if (pid){
@@ -7805,34 +7989,9 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           wrap.classList.remove('is-hovering');
           $$('.post', wrap).forEach(r=>r.classList.remove('hover'));
         }
-        currentViewsPerPersonChart.setHoverSeries(pid);
-        currentViewsChart.setHoverSeries(pid);
-        currentFirst24HoursChart.setHoverSeries(pid);
-      });
-      currentViewsPerPersonChart.onHover((pid)=>{
-        const wrap = $('#posts'); if (!wrap) return;
-        if (pid){ wrap.classList.add('is-hovering'); $$('.post', wrap).forEach(r=>{ if (r.dataset.pid===pid) r.classList.add('hover'); else r.classList.remove('hover'); }); }
-        else { wrap.classList.remove('is-hovering'); $$('.post', wrap).forEach(r=>r.classList.remove('hover')); }
-        currentChart.setHoverSeries(pid);
-        currentViewsChart.setHoverSeries(pid);
-        currentFirst24HoursChart.setHoverSeries(pid);
-      });
-      currentViewsChart.onHover((pid)=>{
-        const wrap = $('#posts'); if (!wrap) return;
-        if (pid){ wrap.classList.add('is-hovering'); $$('.post', wrap).forEach(r=>{ if (r.dataset.pid===pid) r.classList.add('hover'); else r.classList.remove('hover'); }); }
-        else { wrap.classList.remove('is-hovering'); $$('.post', wrap).forEach(r=>r.classList.remove('hover')); }
-        currentChart.setHoverSeries(pid);
-        currentViewsPerPersonChart.setHoverSeries(pid);
-        currentFirst24HoursChart.setHoverSeries(pid);
-      });
-      currentFirst24HoursChart.onHover((pid)=>{
-        const wrap = $('#posts'); if (!wrap) return;
-        if (pid){ wrap.classList.add('is-hovering'); $$('.post', wrap).forEach(r=>{ if (r.dataset.pid===pid) r.classList.add('hover'); else r.classList.remove('hover'); }); }
-        else { wrap.classList.remove('is-hovering'); $$('.post', wrap).forEach(r=>r.classList.remove('hover')); }
-        currentChart.setHoverSeries(pid);
-        currentViewsPerPersonChart.setHoverSeries(pid);
-        currentViewsChart.setHoverSeries(pid);
-      });
+        syncHoverCharts(pid);
+      };
+      hoverCharts.forEach((c)=> c.onHover(handleChartHover));
       // wire visibility toggles (delegated)
       const postsWrap = $('#posts');
       if (postsWrap) {
@@ -7872,9 +8031,12 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           updatePostsListRows(user, colorFor, visibleSet, nextOpts);
           // Fit to visible
           chart.resetZoom();
+          interactionRateStackedChart.resetZoom();
           viewsPerPersonChart.resetZoom();
+          viewsPerPersonTimeChart.resetZoom();
           const useUnique = viewsChartType === 'unique';
           chart.setData(computeSeriesForUser(user, [], colorFor, useUnique).filter(s=>visibleSet.has(s.id)).map(s=>({ ...s, url: absUrl(user.posts?.[s.id]?.url, s.id) })));
+          updateInteractionRateStackedChart(parseInt($('#interactionRateSlider')?.value) || STACKED_WINDOW_MINUTES_DEFAULT);
           // Refresh the cumulative views time series to reflect current visibility
           const vSeries = (function(){
             const out=[]; for (const [vpid,p] of Object.entries(user.posts||{})){
@@ -7887,10 +8049,11 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
             }
             return out; })();
           viewsChart.setData(vSeries);
+          updateViewsPerPersonTimeChart();
           // Refresh Views Per Person chart
-          updateViewsPerPersonChart(parseInt($('#viewsPerPersonSlider')?.value) || 1440);
+          updateViewsPerPersonChart(parseInt($('#viewsPerPersonSlider')?.value) || STACKED_WINDOW_MINUTES_DEFAULT);
           // Update first 24 hours chart
-          updateFirst24HoursChart(parseInt($('#first24HoursSlider')?.value) || 1440);
+          updateFirst24HoursChart(parseInt($('#first24HoursSlider')?.value) || STACKED_WINDOW_MINUTES_DEFAULT);
           // (likes total chart is unfiltered; no need to refresh here)
           updateSummaryMetrics(user, visibleSet);
           try {
@@ -8066,21 +8229,47 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
 
     // Views type toggle pills
     let isUpdatingViewsType = false; // Prevent recursive calls
-    function syncViewsHeaders(type){
+    function syncViewsHeaders(type = viewsChartType){
       const prefix = type === 'unique' ? 'Viewers' : 'Total Views';
-      const overTimeTitle = $('#viewsOverTimeTitle');
-      if (overTimeTitle) overTimeTitle.textContent = `${prefix} over Time`;
-      const first24Title = $('#first24HoursTitle');
-      if (first24Title) first24Title.textContent = `${prefix} in First 24 Hours`;
+      const interactionTitle = $('#interactionRateTitle');
+      if (interactionTitle) {
+        const isStacked = chartsMode === 'stacked';
+        interactionTitle.textContent = isStacked
+          ? 'Interaction Rate over Time'
+          : `Interaction Rate vs. ${prefix}`;
+      }
+      const viewsTitle = $('#viewsChartTitle');
+      if (viewsTitle) {
+        viewsTitle.textContent = `${prefix} over Time`;
+      }
+      const viewsPerPersonTitle = $('#viewsPerPersonTitle');
+      if (viewsPerPersonTitle) {
+        viewsPerPersonTitle.textContent = 'Views Per Person over Time';
+      }
       const allOverTimeTitle = $('#allViewsOverTimeTitle');
       if (allOverTimeTitle) allOverTimeTitle.textContent = `${prefix} over Time`;
+    }
+
+    function applyDefaultInteractionRateZoom(userKey){
+      if (!zoomStatesLoaded || !userKey || !chart) return;
+      if (defaultInteractionZoomApplied.has(userKey)) return;
+      chart.setZoom({ y: [0, INTERACTION_RATE_DEFAULT_ZOOM_Y_MAX] });
+      defaultInteractionZoomApplied.add(userKey);
     }
 
     function syncViewsPills(type){
       const uniquePill = $('#uniqueViewsPill');
       const totalPill = $('#totalViewsPill');
-      if (uniquePill) uniquePill.classList.toggle('active', type === 'unique');
-      if (totalPill) totalPill.classList.toggle('active', type !== 'unique');
+      if (uniquePill) {
+        const isActive = type === 'unique';
+        uniquePill.classList.toggle('active', isActive);
+        uniquePill.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      }
+      if (totalPill) {
+        const isActive = type !== 'unique';
+        totalPill.classList.toggle('active', isActive);
+        totalPill.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      }
     }
 
     function updateViewsType(type){
@@ -8116,6 +8305,143 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       }
     }
 
+    let isUpdatingChartMode = false;
+    function setToggleState(btn, isActive){
+      if (!btn) return;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    }
+
+    function setCanvasVisible(canvas, isVisible){
+      if (!canvas) return;
+      canvas.classList.toggle('is-canvas-hidden', !isVisible);
+    }
+
+    function setSliderVisible(el, isVisible){
+      if (!el) return;
+      el.classList.toggle('is-hidden', !isVisible);
+    }
+
+    function hideTooltips(ids){
+      ids.forEach((id)=>{
+        const el = $(id);
+        if (el) el.style.display = 'none';
+      });
+    }
+
+    function fmtStackedWindow(minutes){
+      if (minutes < 60) return `${minutes}m`;
+      const totalMinutes = Math.round(minutes);
+      const days = Math.floor(totalMinutes / 1440);
+      const hours = Math.floor((totalMinutes % 1440) / 60);
+      const mins = totalMinutes % 60;
+      if (days > 0) {
+        if (hours === 0 && mins === 0) return `${days}d`;
+        if (mins === 0) return `${days}d ${hours}h`;
+        if (hours === 0) return `${days}d ${mins}m`;
+        return `${days}d ${hours}h ${mins}m`;
+      }
+      if (mins === 0) return `${hours}h`;
+      return `${hours}h ${mins}m`;
+    }
+
+    function normalizeStackedWindowMinutes(value, fallback = STACKED_WINDOW_MINUTES_DEFAULT){
+      const raw = Number(value);
+      if (!Number.isFinite(raw) || raw <= 0) return fallback;
+      const stepped = Math.round(raw / 15) * 15;
+      return clamp(stepped, 15, STACKED_WINDOW_MINUTES_MAX);
+    }
+
+    function loadStackedWindowMinutes(key){
+      try { return normalizeStackedWindowMinutes(localStorage.getItem(key)); } catch { return STACKED_WINDOW_MINUTES_DEFAULT; }
+    }
+
+    function saveStackedWindowMinutes(key, minutes){
+      const normalized = normalizeStackedWindowMinutes(minutes);
+      try { localStorage.setItem(key, String(normalized)); } catch {}
+      try { chrome.storage.local.set({ [key]: normalized }); } catch {}
+      return normalized;
+    }
+
+    function applyStackedWindowDefaults(){
+      const interactionSlider = $('#interactionRateSlider');
+      if (interactionSlider) interactionSlider.value = String(loadStackedWindowMinutes(STACKED_WINDOW_STORAGE_KEYS.interaction));
+      const viewsSlider = $('#first24HoursSlider');
+      if (viewsSlider) viewsSlider.value = String(loadStackedWindowMinutes(STACKED_WINDOW_STORAGE_KEYS.views));
+      const viewsPerPersonSlider = $('#viewsPerPersonSlider');
+      if (viewsPerPersonSlider) viewsPerPersonSlider.value = String(loadStackedWindowMinutes(STACKED_WINDOW_STORAGE_KEYS.viewsPerPerson));
+    }
+
+    function syncStackedSliderValue(sliderEl, labelEl, minutes, storageKey){
+      if (!sliderEl || !labelEl) return;
+      const normalized = normalizeStackedWindowMinutes(minutes);
+      sliderEl.value = String(normalized);
+      labelEl.textContent = fmtStackedWindow(normalized);
+      if (storageKey) saveStackedWindowMinutes(storageKey, normalized);
+    }
+
+    function ensureStackedWindowHasData(){
+      const interactionSlider = $('#interactionRateSlider');
+      const interactionLabel = $('#interactionRateSliderValue');
+      const interactionMinutes = parseInt(interactionSlider?.value) || STACKED_WINDOW_MINUTES_DEFAULT;
+      if (!updateInteractionRateStackedChart(interactionMinutes) && interactionMinutes < STACKED_WINDOW_MINUTES_MAX) {
+        syncStackedSliderValue(interactionSlider, interactionLabel, STACKED_WINDOW_MINUTES_MAX, STACKED_WINDOW_STORAGE_KEYS.interaction);
+        updateInteractionRateStackedChart(STACKED_WINDOW_MINUTES_MAX);
+      }
+      const viewsSlider = $('#first24HoursSlider');
+      const viewsLabel = $('#first24HoursSliderValue');
+      const viewsMinutes = parseInt(viewsSlider?.value) || STACKED_WINDOW_MINUTES_DEFAULT;
+      if (!updateFirst24HoursChart(viewsMinutes) && viewsMinutes < STACKED_WINDOW_MINUTES_MAX) {
+        syncStackedSliderValue(viewsSlider, viewsLabel, STACKED_WINDOW_MINUTES_MAX, STACKED_WINDOW_STORAGE_KEYS.views);
+        updateFirst24HoursChart(STACKED_WINDOW_MINUTES_MAX);
+      }
+      const vppSlider = $('#viewsPerPersonSlider');
+      const vppLabel = $('#viewsPerPersonSliderValue');
+      const vppMinutes = parseInt(vppSlider?.value) || STACKED_WINDOW_MINUTES_DEFAULT;
+      if (!updateViewsPerPersonChart(vppMinutes) && vppMinutes < STACKED_WINDOW_MINUTES_MAX) {
+        syncStackedSliderValue(vppSlider, vppLabel, STACKED_WINDOW_MINUTES_MAX, STACKED_WINDOW_STORAGE_KEYS.viewsPerPerson);
+        updateViewsPerPersonChart(STACKED_WINDOW_MINUTES_MAX);
+      }
+    }
+
+    function setGlobalChartMode(mode, opts = {}){
+      const normalized = normalizeChartMode(mode) || 'linear';
+      if (isUpdatingChartMode) return;
+      isUpdatingChartMode = true;
+      try {
+        const persist = opts.persist !== false;
+        chartsMode = normalized;
+        if (persist) {
+          saveChartMode(CHART_MODE_STORAGE_KEY, normalized);
+          chartModeLoaded = true;
+        }
+        setToggleState($('#chartModeLinear'), normalized === 'linear');
+        setToggleState($('#chartModeStacked'), normalized === 'stacked');
+        const isStacked = normalized === 'stacked';
+        setCanvasVisible($('#chart'), !isStacked);
+        setCanvasVisible($('#interactionRateStackedChart'), isStacked);
+        setSliderVisible($('#interactionRateSliderWrap'), isStacked);
+        setCanvasVisible($('#viewsChart'), !isStacked);
+        setCanvasVisible($('#first24HoursChart'), isStacked);
+        setSliderVisible($('#viewsStackedSliderWrap'), isStacked);
+        setCanvasVisible($('#viewsPerPersonTimeChart'), !isStacked);
+        setCanvasVisible($('#viewsPerPersonChart'), isStacked);
+        setSliderVisible($('#viewsPerPersonSliderWrap'), isStacked);
+        hideTooltips([
+          '#tooltip',
+          '#interactionRateStackedTooltip',
+          '#viewsTooltip',
+          '#first24HoursTooltip',
+          '#viewsPerPersonTimeTooltip',
+          '#viewsPerPersonTooltip'
+        ]);
+        if (isStacked) ensureStackedWindowHasData();
+        syncViewsHeaders();
+      } finally {
+        isUpdatingChartMode = false;
+      }
+    }
+
     $('#uniqueViewsPill').addEventListener('click', (e)=>{
       e.stopPropagation();
       if (viewsChartType !== 'unique') updateViewsType('unique');
@@ -8124,6 +8450,12 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       e.stopPropagation();
       if (viewsChartType !== 'total') updateViewsType('total');
     });
+    const chartModeLinearBtn = $('#chartModeLinear');
+    const chartModeStackedBtn = $('#chartModeStacked');
+    if (chartModeLinearBtn) chartModeLinearBtn.addEventListener('click', ()=> setGlobalChartMode('linear'));
+    if (chartModeStackedBtn) chartModeStackedBtn.addEventListener('click', ()=> setGlobalChartMode('stacked'));
+    applyStackedWindowDefaults();
+    setGlobalChartMode(chartsMode, { persist: shouldPersistLegacyChartMode });
     syncViewsHeaders(viewsChartType);
     syncViewsPills(viewsChartType);
 
@@ -8989,6 +9321,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         views: safeGetDomain(viewsChart),
         first24Hours: safeGetDomain(first24HoursChart),
         viewsPerPerson: safeGetDomain(viewsPerPersonChart),
+        viewsPerPersonTime: safeGetDomain(viewsPerPersonTimeChart),
         followers: safeGetDomain(followersChart),
         allViews: safeGetDomain(allViewsChart),
         allLikes: safeGetDomain(allLikesChart),
@@ -9008,8 +9341,10 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       }
       // capture zoom states
       const zScatter = chart.getZoom();
+      const zInteractionStacked = interactionRateStackedChart.getZoom();
       const zViews = viewsChart.getZoom();
       const zFirst24Hours = first24HoursChart.getZoom();
+      const zViewsPerPersonTime = viewsPerPersonTimeChart.getZoom();
       const zLikesAll = allLikesChart.getZoom();
       const zCameos = cameosChart.getZoom();
       const zFollowers = followersChart.getZoom();
@@ -9042,8 +9377,10 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       saveSessionCache();
       // restore zoom states
       try { if (zScatter) chart.setZoom(zScatter); } catch {}
+      try { if (zInteractionStacked) interactionRateStackedChart.setZoom(zInteractionStacked); } catch {}
       try { if (zViews) viewsChart.setZoom(zViews); } catch {}
       try { if (zFirst24Hours) first24HoursChart.setZoom(zFirst24Hours); } catch {}
+      try { if (zViewsPerPersonTime) viewsPerPersonTimeChart.setZoom(zViewsPerPersonTime); } catch {}
       try { if (zLikesAll) allLikesChart.setZoom(zLikesAll); } catch {}
       try { if (zCameos) cameosChart.setZoom(zCameos); } catch {}
       try { if (zFollowers) followersChart.setZoom(zFollowers); } catch {}
@@ -9052,6 +9389,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         expandZoomRightIfAtEdge(viewsChart, prevDomains.views, safeGetDomain(viewsChart));
         expandZoomRightIfAtEdge(first24HoursChart, prevDomains.first24Hours, safeGetDomain(first24HoursChart));
         expandZoomRightIfAtEdge(viewsPerPersonChart, prevDomains.viewsPerPerson, safeGetDomain(viewsPerPersonChart));
+        expandZoomRightIfAtEdge(viewsPerPersonTimeChart, prevDomains.viewsPerPersonTime, safeGetDomain(viewsPerPersonTimeChart));
         expandZoomRightIfAtEdge(followersChart, prevDomains.followers, safeGetDomain(followersChart));
         expandZoomRightIfAtEdge(allViewsChart, prevDomains.allViews, safeGetDomain(allViewsChart));
         expandZoomRightIfAtEdge(allLikesChart, prevDomains.allLikes, safeGetDomain(allLikesChart));
@@ -9098,7 +9436,9 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     function persistZoom(){
       const z = zoomStates[currentUserKey] || (zoomStates[currentUserKey] = {});
       z.scatter = chart.getZoom();
+      z.interactionStacked = interactionRateStackedChart.getZoom();
       z.viewsPerPerson = viewsPerPersonChart.getZoom();
+      z.viewsPerPersonTime = viewsPerPersonTimeChart.getZoom();
       z.views = viewsChart.getZoom();
       z.first24Hours = first24HoursChart.getZoom();
       z.likesAll = allLikesChart.getZoom();
@@ -9196,7 +9536,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         if (!u) return;
         visibleSet.clear();
         Object.keys(u.posts||{}).forEach(pid=>visibleSet.add(pid));
-        chart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
         refreshUserUI({ skipRestoreZoom: true });
         persistVisibility();
       });
@@ -9204,7 +9544,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         currentVisibilitySource = 'hideAll';
         setListActionActive('hideAll');
         visibleSet.clear();
-        chart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
         refreshUserUI({ preserveEmpty: true, skipRestoreZoom: true });
         persistVisibility();
       });
@@ -9229,7 +9569,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         });
         visibleSet.clear();
         sorted.forEach(it=>visibleSet.add(it.pid));
-        chart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
         refreshUserUI({ preserveEmpty: true, skipRestoreZoom: true }); persistVisibility();
       });
       $('#pastWeek').addEventListener('click', ()=>{
@@ -9253,36 +9593,63 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         });
         visibleSet.clear();
         sorted.forEach(it=>visibleSet.add(it.pid));
-        chart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
         refreshUserUI({ preserveEmpty: true, skipRestoreZoom: true }); persistVisibility();
       });
-      // First 24 hours slider
+      // Stacked view sliders
       function fmtSliderTime(minutes){
         if (minutes < 60) return `${minutes}m`;
-        const hours = Math.floor(minutes / 60);
-        const mins = minutes % 60;
+        const totalMinutes = Math.round(minutes);
+        const days = Math.floor(totalMinutes / 1440);
+        const hours = Math.floor((totalMinutes % 1440) / 60);
+        const mins = totalMinutes % 60;
+        if (days > 0) {
+          if (hours === 0 && mins === 0) return `${days}d`;
+          if (mins === 0) return `${days}d ${hours}h`;
+          if (hours === 0) return `${days}d ${mins}m`;
+          return `${days}d ${hours}h ${mins}m`;
+        }
         if (mins === 0) return `${hours}h`;
         return `${hours}h ${mins}m`;
+      }
+      const interactionRateSlider = $('#interactionRateSlider');
+      const interactionRateSliderValue = $('#interactionRateSliderValue');
+      if (interactionRateSlider && interactionRateSliderValue) {
+        interactionRateSlider.max = STACKED_WINDOW_MINUTES_MAX;
+        interactionRateSlider.addEventListener('input', (e)=>{
+          const minutes = parseInt(e.target.value);
+          const normalized = saveStackedWindowMinutes(STACKED_WINDOW_STORAGE_KEYS.interaction, minutes);
+          interactionRateSliderValue.textContent = fmtSliderTime(normalized);
+          if (normalized !== minutes) interactionRateSlider.value = String(normalized);
+          updateInteractionRateStackedChart(normalized);
+        });
+        interactionRateSliderValue.textContent = fmtSliderTime(parseInt(interactionRateSlider.value) || STACKED_WINDOW_MINUTES_DEFAULT);
       }
       const slider = $('#first24HoursSlider');
       const sliderValue = $('#first24HoursSliderValue');
       if (slider && sliderValue) {
+        slider.max = STACKED_WINDOW_MINUTES_MAX;
         slider.addEventListener('input', (e)=>{
           const minutes = parseInt(e.target.value);
-          sliderValue.textContent = fmtSliderTime(minutes);
-          updateFirst24HoursChart(minutes);
+          const normalized = saveStackedWindowMinutes(STACKED_WINDOW_STORAGE_KEYS.views, minutes);
+          sliderValue.textContent = fmtSliderTime(normalized);
+          if (normalized !== minutes) slider.value = String(normalized);
+          updateFirst24HoursChart(normalized);
         });
-        sliderValue.textContent = fmtSliderTime(parseInt(slider.value) || 1440);
+        sliderValue.textContent = fmtSliderTime(parseInt(slider.value) || STACKED_WINDOW_MINUTES_DEFAULT);
       }
       const viewsPerPersonSlider = $('#viewsPerPersonSlider');
       const viewsPerPersonSliderValue = $('#viewsPerPersonSliderValue');
       if (viewsPerPersonSlider && viewsPerPersonSliderValue) {
+        viewsPerPersonSlider.max = STACKED_WINDOW_MINUTES_MAX;
         viewsPerPersonSlider.addEventListener('input', (e)=>{
           const minutes = parseInt(e.target.value);
-          viewsPerPersonSliderValue.textContent = fmtSliderTime(minutes);
-          updateViewsPerPersonChart(minutes);
+          const normalized = saveStackedWindowMinutes(STACKED_WINDOW_STORAGE_KEYS.viewsPerPerson, minutes);
+          viewsPerPersonSliderValue.textContent = fmtSliderTime(normalized);
+          if (normalized !== minutes) viewsPerPersonSlider.value = String(normalized);
+          updateViewsPerPersonChart(normalized);
         });
-        viewsPerPersonSliderValue.textContent = fmtSliderTime(parseInt(viewsPerPersonSlider.value) || 1440);
+        viewsPerPersonSliderValue.textContent = fmtSliderTime(parseInt(viewsPerPersonSlider.value) || STACKED_WINDOW_MINUTES_DEFAULT);
       }
       $('#last5').addEventListener('click', ()=>{
         currentVisibilitySource = 'last5';
@@ -9303,7 +9670,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         const sorted = withTs.concat(noTs);
         visibleSet.clear();
         sorted.slice(0, 5).forEach(it=>visibleSet.add(it.pid));
-        chart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
         refreshUserUI({ skipRestoreZoom: true }); persistVisibility();
       });
       $('#last10').addEventListener('click', ()=>{
@@ -9325,7 +9692,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         const sorted = withTs.concat(noTs);
         visibleSet.clear();
         sorted.slice(0, 10).forEach(it=>visibleSet.add(it.pid));
-        chart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
         refreshUserUI({ skipRestoreZoom: true }); persistVisibility();
       });
       $('#top5').addEventListener('click', ()=>{
@@ -9356,7 +9723,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         });
         visibleSet.clear();
         sorted.slice(0, 5).forEach(it=>visibleSet.add(it.pid));
-        chart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
         refreshUserUI({ skipRestoreZoom: true }); persistVisibility();
       });
       $('#top10').addEventListener('click', ()=>{
@@ -9387,7 +9754,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         });
         visibleSet.clear();
         sorted.slice(0, 10).forEach(it=>visibleSet.add(it.pid));
-        chart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
         refreshUserUI({ skipRestoreZoom: true }); persistVisibility();
       });
       $('#bottom5').addEventListener('click', ()=>{
@@ -9464,7 +9831,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         })();
         visibleSet.clear();
         picked.forEach(it=>visibleSet.add(it.pid));
-        chart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
         refreshUserUI({ skipRestoreZoom: true }); persistVisibility();
       });
       $('#bottom10').addEventListener('click', ()=>{
@@ -9541,7 +9908,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         })();
         visibleSet.clear();
         picked.forEach(it=>visibleSet.add(it.pid));
-        chart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
         refreshUserUI({ skipRestoreZoom: true }); persistVisibility();
       });
 
@@ -9561,7 +9928,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         const stale = mapped.filter(x=>x.ageMs > TWENTY_FOUR_HOURS_MS);
         visibleSet.clear();
         stale.forEach(it=>visibleSet.add(it.pid));
-        chart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
         refreshUserUI({ preserveEmpty: true, skipRestoreZoom: true }); persistVisibility();
       });
 
@@ -9604,6 +9971,8 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         currentUserKey = st.lastUserKey;
       }
       zoomStates = st.zoomStates || {};
+      zoomStatesLoaded = true;
+      applyDefaultInteractionRateZoom(currentUserKey);
       if (st.lastFilterAction && (!lastFilterAction || lastFilterAction === 'showAll')) {
         lastFilterAction = st.lastFilterAction;
       }
@@ -9618,6 +9987,25 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           updateViewsType(storedViewsType);
         }
         viewsChartTypeLoaded = true;
+      }
+      const storedChartMode = normalizeChartMode(st?.[CHART_MODE_STORAGE_KEY]);
+      if (storedChartMode) {
+        if (!chartModeLoaded && storedChartMode !== chartsMode) {
+          setGlobalChartMode(storedChartMode, { persist: false });
+        }
+        chartModeLoaded = true;
+      } else {
+        const legacyStoredMode = resolveLegacyChartMode({
+          interaction: st?.[LEGACY_CHART_MODE_KEYS.interaction],
+          views: st?.[LEGACY_CHART_MODE_KEYS.views],
+          viewsPerPerson: st?.[LEGACY_CHART_MODE_KEYS.viewsPerPerson]
+        });
+        if (legacyStoredMode) {
+          if (!chartModeLoaded && legacyStoredMode !== chartsMode) {
+            setGlobalChartMode(legacyStoredMode, { persist: true });
+          }
+          chartModeLoaded = true;
+        }
       }
       const storedBestTimePrefs = normalizeBestTimePrefs(st?.[BEST_TIME_PREFS_KEY]);
       if (storedBestTimePrefs) {

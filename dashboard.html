@@ -100,22 +100,22 @@
             <h3 class="section-title section-title-first">Post Time Advisor</h3>
             <p class="best-time-subtitle">Based on like counts from every post you've ever browsed on Sora. <a id="bestTimeGatherLink" class="best-time-link" href="#">Gather more data.</a></p>
           </div>
-          <div class="best-time-toggle" role="tablist" aria-label="Best time range">
-            <button id="bestTimeTabWeek" class="best-time-tab" type="button">This week</button>
-            <button id="bestTimeTabMonth" class="best-time-tab" type="button">This month</button>
-            <button id="bestTimeTabYear" class="best-time-tab" type="button">This year</button>
+          <div class="best-time-toggle toggle-group toggle-group--lg" role="tablist" aria-label="Best time range">
+            <button id="bestTimeTabWeek" class="best-time-tab toggle-pill toggle-pill--lg" type="button">This week</button>
+            <button id="bestTimeTabMonth" class="best-time-tab toggle-pill toggle-pill--lg" type="button">This month</button>
+            <button id="bestTimeTabYear" class="best-time-tab toggle-pill toggle-pill--lg" type="button">This year</button>
           </div>
         </div>
         <div class="best-time-body">
           <div class="best-time-hero">
             <div class="best-time-hero-header">
               <div id="bestTimeRecLabel" class="best-time-badge">Top Recommendation</div>
-              <div class="best-time-rec-toggle" role="tablist" aria-label="Recommendation switch">
-                <button id="bestTimeRecPrimary" class="best-time-rec-btn" type="button">Top</button>
-                <button id="bestTimeRecSecondary" class="best-time-rec-btn" type="button">Next Best</button>
-                <button id="bestTimeRecToday" class="best-time-rec-btn" type="button">Today</button>
-              </div>
+            <div class="best-time-rec-toggle toggle-group toggle-group--sm" role="tablist" aria-label="Recommendation switch">
+              <button id="bestTimeRecPrimary" class="best-time-rec-btn toggle-pill toggle-pill--sm" type="button">Top</button>
+              <button id="bestTimeRecSecondary" class="best-time-rec-btn toggle-pill toggle-pill--sm" type="button">Next Best</button>
+              <button id="bestTimeRecToday" class="best-time-rec-btn toggle-pill toggle-pill--sm" type="button">Today</button>
             </div>
+          </div>
             <div id="bestTimeDay" class="best-time-day">—</div>
             <div id="bestTimeTime" class="best-time-time">—</div>
             <div class="best-time-meta">
@@ -221,40 +221,66 @@
         </div>
       </div>
       <div class="views-toggle">
-        <button id="totalViewsPill" class="views-pill active" data-type="total">Total Views</button>
-        <button id="uniqueViewsPill" class="views-pill" data-type="unique">Viewers</button>
+        <div class="toggle-group toggle-group--lg" role="group" aria-label="View type">
+          <button id="totalViewsPill" class="views-pill toggle-pill toggle-pill--lg active" data-type="total" aria-pressed="true">Total Views</button>
+          <button id="uniqueViewsPill" class="views-pill toggle-pill toggle-pill--lg" data-type="unique" aria-pressed="false">Viewers</button>
+        </div>
+        <div class="toggle-group toggle-group--lg" role="group" aria-label="Chart mode">
+          <button id="chartModeLinear" class="toggle-pill toggle-pill--lg active" data-mode="linear" aria-pressed="true">Linear</button>
+          <button id="chartModeStacked" class="toggle-pill toggle-pill--lg" data-mode="stacked" aria-pressed="false">Stacked</button>
+        </div>
       </div>
-      <h4 class="chart-title">Interaction Rate</h4>
-      <div class="chart-wrap">
-        <canvas id="chart" width="900" height="540"></canvas>
-        <div id="tooltip" class="tooltip"></div>
-      </div>
-      <h4 id="viewsOverTimeTitle" class="chart-title">Views over Time</h4>
-      <div class="chart-wrap chart-wrap-spaced">
-        <canvas id="viewsChart" width="900" height="540"></canvas>
-        <div id="viewsTooltip" class="tooltip"></div>
-      </div>
-      <h4 id="first24HoursTitle" class="chart-title">Views in First 24 Hours</h4>
-      <div class="chart-wrap chart-wrap-spaced">
-        <canvas id="first24HoursChart" width="900" height="540"></canvas>
-        <div id="first24HoursTooltip" class="tooltip"></div>
-        <div class="chart-slider">
-          <div class="chart-slider-row">
-            <label class="chart-slider-label">Time Window</label>
-            <input type="range" id="first24HoursSlider" min="15" max="1440" value="1440" step="15" class="chart-slider-input" />
-            <span id="first24HoursSliderValue" class="chart-slider-value">24 hrs</span>
+      <div class="chart-block">
+        <h4 id="interactionRateTitle" class="chart-title">Interaction Rate vs. Viewers</h4>
+        <div class="chart-wrap">
+          <div class="chart-canvas-stack">
+            <canvas id="chart" class="chart-canvas" width="900" height="540"></canvas>
+            <canvas id="interactionRateStackedChart" class="chart-canvas is-canvas-hidden" width="900" height="540"></canvas>
+          </div>
+          <div id="tooltip" class="tooltip"></div>
+          <div id="interactionRateStackedTooltip" class="tooltip"></div>
+          <div id="interactionRateSliderWrap" class="chart-slider is-hidden">
+            <div class="chart-slider-row">
+              <label class="chart-slider-label">Time Window</label>
+              <input type="range" id="interactionRateSlider" min="15" max="21600" value="1440" step="15" class="chart-slider-input" />
+              <span id="interactionRateSliderValue" class="chart-slider-value">24h</span>
+            </div>
           </div>
         </div>
       </div>
-      <h4 class="chart-title">Views Per Person in First 24 Hours</h4>
-      <div class="chart-wrap chart-wrap-spaced">
-        <canvas id="viewsPerPersonChart" width="900" height="540"></canvas>
-        <div id="viewsPerPersonTooltip" class="tooltip"></div>
-        <div class="chart-slider">
-          <div class="chart-slider-row">
-            <label class="chart-slider-label">Time Window</label>
-            <input type="range" id="viewsPerPersonSlider" min="15" max="1440" value="1440" step="15" class="chart-slider-input" />
-            <span id="viewsPerPersonSliderValue" class="chart-slider-value">24 hrs</span>
+      <div class="chart-block">
+        <h4 id="viewsChartTitle" class="chart-title">Total Views over Time</h4>
+        <div class="chart-wrap chart-wrap-spaced">
+          <div class="chart-canvas-stack">
+            <canvas id="viewsChart" class="chart-canvas" width="900" height="540"></canvas>
+            <canvas id="first24HoursChart" class="chart-canvas is-canvas-hidden" width="900" height="540"></canvas>
+          </div>
+          <div id="viewsTooltip" class="tooltip"></div>
+          <div id="first24HoursTooltip" class="tooltip"></div>
+          <div id="viewsStackedSliderWrap" class="chart-slider is-hidden">
+            <div class="chart-slider-row">
+              <label class="chart-slider-label">Time Window</label>
+              <input type="range" id="first24HoursSlider" min="15" max="21600" value="1440" step="15" class="chart-slider-input" />
+              <span id="first24HoursSliderValue" class="chart-slider-value">24h</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="chart-block">
+        <h4 id="viewsPerPersonTitle" class="chart-title">Views Per Person over Time</h4>
+        <div class="chart-wrap chart-wrap-spaced">
+          <div class="chart-canvas-stack">
+            <canvas id="viewsPerPersonTimeChart" class="chart-canvas" width="900" height="540"></canvas>
+            <canvas id="viewsPerPersonChart" class="chart-canvas is-canvas-hidden" width="900" height="540"></canvas>
+          </div>
+          <div id="viewsPerPersonTimeTooltip" class="tooltip"></div>
+          <div id="viewsPerPersonTooltip" class="tooltip"></div>
+          <div id="viewsPerPersonSliderWrap" class="chart-slider is-hidden">
+            <div class="chart-slider-row">
+              <label class="chart-slider-label">Time Window</label>
+              <input type="range" id="viewsPerPersonSlider" min="15" max="21600" value="1440" step="15" class="chart-slider-input" />
+              <span id="viewsPerPersonSliderValue" class="chart-slider-value">24h</span>
+            </div>
           </div>
         </div>
       </div>
