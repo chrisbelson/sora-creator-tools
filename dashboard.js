@@ -126,6 +126,11 @@
     views: 'SCT_DASHBOARD_STACKED_WINDOW_VIEWS_V1',
     viewsPerPerson: 'SCT_DASHBOARD_STACKED_WINDOW_VPP_V1'
   };
+  const STACKED_WINDOW_STORAGE_MIN_KEYS = {
+    interaction: 'SCT_DASHBOARD_STACKED_WINDOW_INTERACTION_MIN_V1',
+    views: 'SCT_DASHBOARD_STACKED_WINDOW_VIEWS_MIN_V1',
+    viewsPerPerson: 'SCT_DASHBOARD_STACKED_WINDOW_VPP_MIN_V1'
+  };
   const LEGACY_CHART_MODE_KEYS = {
     interaction: 'SCT_DASHBOARD_INTERACTION_MODE_V1',
     views: 'SCT_DASHBOARD_VIEWS_MODE_V1',
@@ -134,6 +139,7 @@
   const INTERACTION_RATE_DEFAULT_ZOOM_Y_MAX = 15;
   const STACKED_WINDOW_MINUTES_DEFAULT = 24 * 60;
   const STACKED_WINDOW_MINUTES_MAX = 15 * 24 * 60;
+  const STACKED_WINDOW_MIN_GAP_MINUTES = 60;
   let metrics = { users: {} };
   let lastMetricsUpdatedAt = 0;
   let usersIndex = null;
@@ -2846,7 +2852,7 @@
     const DPR = Math.max(1, window.devicePixelRatio||1);
     let W = canvas.clientWidth||canvas.width, H = canvas.clientHeight||canvas.height;
     // plot area margins
-    const M = { left:50, top:20, right:30, bottom:40 };
+    const M = { left:58, top:20, right:30, bottom:40 };
     function resize(){
       W = canvas.clientWidth||canvas.width; H = canvas.clientHeight||canvas.height;
       canvas.width = Math.floor(W*DPR); canvas.height = Math.floor(H*DPR); ctx.setTransform(DPR,0,0,DPR,0,0);
@@ -2890,22 +2896,25 @@
     function axes(){
       const xDomain = state.zoomX || state.x;
       const yDomain = state.zoomY || state.y;
-      ctx.strokeStyle = '#607080'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(50,20); ctx.lineTo(50,H-40); ctx.lineTo(W-30,H-40); ctx.stroke();
+      ctx.strokeStyle = '#607080'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(M.left,M.top); ctx.lineTo(M.left,H-M.bottom); ctx.lineTo(W-M.right,H-M.bottom); ctx.stroke();
       ctx.fillStyle = '#a7b0ba'; ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Arial';
       // ticks
       const xticks = 5, yticks=5;
+      ctx.textAlign = 'right';
       for (let i=0;i<=xticks;i++){
         const x = M.left + i*(W-(M.left+M.right))/xticks; const v = xDomain[0] + i*(xDomain[1]-xDomain[0])/xticks;
+        ctx.textAlign = 'left';
         ctx.fillText(fmt(Math.round(v)), x-10, H - (M.bottom - 18));
       }
+      ctx.textAlign = 'right';
       for (let i=0;i<=yticks;i++){
         const y = H - M.bottom - i*(H-(M.top+M.bottom))/yticks; const v = yDomain[0] + i*(yDomain[1]-yDomain[0])/yticks;
-        ctx.fillText((Math.round(v*10)/10)+'%', 10, y+4);
+        ctx.fillText(`${Number(v).toFixed(1)}%`, 50, y+4);
       }
+      ctx.textAlign = 'left';
       // labels
       ctx.fillStyle = '#e8eaed'; ctx.font = 'bold 13px system-ui, -apple-system, Segoe UI, Roboto, Arial';
       ctx.fillText(xAxisLabel, W/2-50, H-6);
-      ctx.save(); ctx.translate(12, H/2+20); ctx.rotate(-Math.PI/2); ctx.fillText('Interaction rate (%)', 0,0); ctx.restore();
     }
 
     function drawSeries(){
@@ -3189,16 +3198,25 @@
     }
 
     // Double-click to reset zoom
-    canvas.addEventListener('dblclick', ()=>{ state.zoomX=null; state.zoomY=null; draw(); });
+    canvas.addEventListener('dblclick', ()=>{ resetZoom(); });
 
     window.addEventListener('resize', resize);
     resize();
-    function resetZoom(){ state.zoomX=null; state.zoomY=null; draw(); }
+    function resetZoom(){
+      state.zoomX = null;
+      state.zoomY = null;
+      draw();
+    }
     function setHoverSeries(pid){ state.hoverSeries = pid || null; draw(); }
     function onHover(cb){ hoverCb = cb; }
     function getZoom(){ return { x: state.zoomX ? [...state.zoomX] : null, y: state.zoomY ? [...state.zoomY] : null }; }
     function getDomain(){ return { x: state.x ? [...state.x] : null, y: state.y ? [...state.y] : null }; }
-    function setZoom(z){ if (!z) return; if (z.x && isFinite(z.x[0]) && isFinite(z.x[1])) state.zoomX = [z.x[0], z.x[1]]; if (z.y && isFinite(z.y[0]) && isFinite(z.y[1])) state.zoomY = [z.y[0], z.y[1]]; draw(); }
+    function setZoom(z){
+      if (!z) return;
+      if (z.x && isFinite(z.x[0]) && isFinite(z.x[1])) state.zoomX = [z.x[0], z.x[1]];
+      if (z.y && isFinite(z.y[0]) && isFinite(z.y[1])) state.zoomY = [z.y[0], z.y[1]];
+      draw();
+    }
     function setAxisLabels(xAxis, tooltip){ xAxisLabel = xAxis; tooltipLabel = tooltip; draw(); }
     return { setData, resetZoom, setHoverSeries, onHover, getZoom, getDomain, setZoom, setAxisLabels };
   }
@@ -3265,15 +3283,17 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         const x = M.left + i*(W-(M.left+M.right))/xticks; const v = tickVals[i];
         const label = fmtDate(v);
         const off = 24;
+        ctx.textAlign = 'left';
         ctx.fillText(label, x-off, H - (M.bottom - 18));
       }
+      ctx.textAlign = 'right';
       for (let i=0;i<=yticks;i++){
         const y = H - M.bottom - i*(H-(M.top+M.bottom))/yticks; const v = yDomain[0] + i*(yDomain[1]-yDomain[0])/yticks;
-        ctx.fillText(yFmt(v), 10, y+4);
+        ctx.fillText(yFmt(v), 50, y+4);
       }
+      ctx.textAlign = 'left';
       ctx.fillStyle = '#e8eaed'; ctx.font = 'bold 13px system-ui, -apple-system, Segoe UI, Roboto, Arial';
       ctx.fillText('Time', W/2-20, H-6);
-      ctx.save(); ctx.translate(12, H/2+20); ctx.rotate(-Math.PI/2); ctx.fillText(yAxisLabel || 'Views', 0,0); ctx.restore();
     }
     // Interpolate/extrapolate value for a series at a given x (time)
     function getValueAtX(series, x){
@@ -3583,7 +3603,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     canvas.addEventListener('mouseleave', ()=>{ rafPending = null; lastHover = null; state.hover=null; state.hoverSeries=null; state.comparisonLine=null; if (hoverCb) hoverCb(null); draw(); if (drag) drawDragRect(drag); showTooltip(null); });
     // Track recent double-click to avoid opening posts while resetting zoom
     let lastDblClickTs = 0;
-    canvas.addEventListener('dblclick', ()=>{ lastDblClickTs = Date.now(); state.zoomX=null; state.zoomY=null; draw(); });
+    canvas.addEventListener('dblclick', ()=>{ lastDblClickTs = Date.now(); resetZoom(); });
     canvas.addEventListener('click', (e)=>{
       const now = Date.now();
       if (now - lastDblClickTs < 250) return; // ignore clicks immediately after dblclick
@@ -3667,7 +3687,11 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     }
     function draw(){ ctx.clearRect(0,0,canvas.width,canvas.height); grid(); axes(); drawSeries(); drawComparisonLine(); }
     window.addEventListener('resize', resize); resize();
-    function resetZoom(){ state.zoomX=null; state.zoomY=null; draw(); }
+    function resetZoom(){
+      state.zoomX = null;
+      state.zoomY = null;
+      draw();
+    }
     function setHoverSeries(pid){ state.hoverSeries=pid||null; draw(); }
     function onHover(cb){ hoverCb=cb; }
     function getZoom(){ return { x: state.zoomX ? [...state.zoomX] : null, y: state.zoomY ? [...state.zoomY] : null }; }
@@ -3688,33 +3712,59 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       canvas.width = Math.floor(W*DPR); canvas.height = Math.floor(H*DPR); ctx.setTransform(DPR,0,0,DPR,0,0);
       draw();
     }
-    const state = { series:[], x:[0,1], y:[0,1], zoomX:null, zoomY:null, hover:null, hoverSeries:null, comparisonLine:null, timeWindowMinutes:STACKED_WINDOW_MINUTES_DEFAULT };
+    const state = { series:[], x:[0,1], y:[0,1], zoomX:null, zoomY:null, hover:null, hoverSeries:null, comparisonLine:null, timeWindowMinutes:STACKED_WINDOW_MINUTES_DEFAULT, timeWindowMinMinutes:0 };
     let hoverCb = null;
 
-    function setData(series, timeWindowMinutes = STACKED_WINDOW_MINUTES_DEFAULT){
-      state.timeWindowMinutes = timeWindowMinutes;
+    function setData(series, minMinutes = 0, maxMinutes = STACKED_WINDOW_MINUTES_DEFAULT){
+      state.timeWindowMinMinutes = minMinutes;
+      state.timeWindowMinutes = maxMinutes;
+      const EPS = 1e-6;
+      const interpolateAt = (pts, target)=>{
+        if (!pts.length) return null;
+        let before = null;
+        let after = null;
+        for (const p of pts){
+          if (p.x <= target) before = p;
+          if (p.x >= target){ after = p; break; }
+        }
+        if (!before || !after) return null;
+        const span = after.x - before.x;
+        const t = Math.abs(span) < EPS ? 0 : (target - before.x) / span;
+        const y = before.y + (after.y - before.y) * t;
+        const time = before.t + (after.t - before.t) * t;
+        return { x: target, y, t: time, originalX: null, isInterpolated: true };
+      };
       // Filter and transform points: x = minutes since post creation, y = views
-      state.series = series.map(s=>({
-        ...s,
-        points: s.points
-          .filter(p => {
-            if (!s.postTime || !p.t) return false;
-            const minutesSinceCreation = (p.t - s.postTime) / (60 * 1000);
-            return minutesSinceCreation >= 0 && minutesSinceCreation <= timeWindowMinutes;
-          })
+      state.series = series.map(s=>{
+        if (!s.postTime || !s.points?.length) return { ...s, points: [] };
+        const allPoints = s.points
+          .filter(p => p.t != null && p.y != null)
           .map(p => {
             const minutesSinceCreation = (p.t - s.postTime) / (60 * 1000);
             return { x: minutesSinceCreation, y: p.y, t: p.t, originalX: p.x };
           })
-          .sort((a,b)=>a.x-b.x)
-      }));
+          .sort((a,b)=>a.x-b.x);
+        if (!allPoints.length) return { ...s, points: [] };
+        const windowed = allPoints.filter(p => p.x >= minMinutes && p.x <= maxMinutes);
+        const addBoundaryPoint = (target, toStart)=>{
+          const boundary = interpolateAt(allPoints, target);
+          if (!boundary) return;
+          const hasPoint = windowed.some(p => Math.abs(p.x - target) < EPS);
+          if (hasPoint) return;
+          if (toStart) windowed.unshift(boundary);
+          else windowed.push(boundary);
+        };
+        addBoundaryPoint(minMinutes, true);
+        addBoundaryPoint(maxMinutes, false);
+        return { ...s, points: windowed };
+      });
       const xs=[], ys=[];
       for (const s of state.series){
         for (const p of s.points){ xs.push(p.x); ys.push(p.y); }
       }
       state.x = extent(xs, d=>d);
       state.y = extent(ys, d=>d);
-      if (state.x[0] === Infinity) state.x = [0, timeWindowMinutes];
+      if (state.x[0] === Infinity) state.x = [minMinutes, maxMinutes];
       if (state.y[0] === Infinity) state.y = [0, 1];
       draw();
     }
@@ -3760,15 +3810,17 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         const x = M.left + i*(W-(M.left+M.right))/xticks; const v = tickVals[i];
         const label = fmtTime(v);
         const off = label.length * 6;
+        ctx.textAlign = 'left';
         ctx.fillText(label, x-off/2, H - (M.bottom - 18));
       }
+      ctx.textAlign = 'right';
       for (let i=0;i<=yticks;i++){
         const y = H - M.bottom - i*(H-(M.top+M.bottom))/yticks; const v = yDomain[0] + i*(yDomain[1]-yDomain[0])/yticks;
-        ctx.fillText(yFmt(v), 10, y+4);
+        ctx.fillText(yFmt(v), 50, y+4);
       }
+      ctx.textAlign = 'left';
       ctx.fillStyle = '#e8eaed'; ctx.font = 'bold 13px system-ui, -apple-system, Segoe UI, Roboto, Arial';
       ctx.fillText('Time Since Creation', W/2-60, H-6);
-      ctx.save(); ctx.translate(12, H/2+20); ctx.rotate(-Math.PI/2); ctx.fillText(yAxisLabel || 'Viewers', 0,0); ctx.restore();
     }
     // Interpolate/extrapolate value for a series at a given x (time)
     function getValueAtX(series, x){
@@ -3888,6 +3940,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       let best=null, bd=Infinity;
       for (const s of state.series){
         for (const p of s.points){
+          if (p.isInterpolated) continue;
           const x = mapX(p.x), y = mapY(p.y);
           if (x < M.left || x > W - M.right || y < M.top || y > H - M.bottom) continue;
           const d = Math.hypot(mx-x,my-y);
@@ -4133,7 +4186,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       const muted='#38424c'; const anyHover=!!state.hoverSeries;
       for (const s of state.series){ const color=(anyHover && state.hoverSeries!==s.id)?muted:s.color; if (s.points.length>1){ ctx.strokeStyle=color; ctx.lineWidth=1.4; ctx.lineJoin='round'; ctx.lineCap='round';
         if (drawSmoothLine(ctx, s.points, mapX, mapY)) ctx.stroke(); }
-        for (const p of s.points){ const x=mapX(p.x), y=mapY(p.y); const isHover=state.hover && state.hover.pid===s.id && state.hover.i===p.t; ctx.fillStyle=color; ctx.beginPath(); ctx.arc(x,y,isHover?4.2:2.4,0,Math.PI*2); ctx.fill(); if (isHover){ ctx.strokeStyle='#ffffffaa'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.stroke(); } }
+        for (const p of s.points){ if (p.isInterpolated) continue; const x=mapX(p.x), y=mapY(p.y); const isHover=state.hover && state.hover.pid===s.id && state.hover.i===p.t; ctx.fillStyle=color; ctx.beginPath(); ctx.arc(x,y,isHover?4.2:2.4,0,Math.PI*2); ctx.fill(); if (isHover){ ctx.strokeStyle='#ffffffaa'; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.stroke(); } }
       }
     }
     function draw(){ ctx.clearRect(0,0,canvas.width,canvas.height); grid(); axes(); drawSeries(); drawComparisonLine(); }
@@ -4143,7 +4196,12 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     function onHover(cb){ hoverCb=cb; }
     function getZoom(){ return { x: state.zoomX ? [...state.zoomX] : null, y: state.zoomY ? [...state.zoomY] : null }; }
     function getDomain(){ return { x: state.x ? [...state.x] : null, y: state.y ? [...state.y] : null }; }
-    function setZoom(z){ if (!z) return; if (z.x && isFinite(z.x[0]) && isFinite(z.x[1])) state.zoomX = [z.x[0], z.x[1]]; if (z.y && isFinite(z.y[0]) && isFinite(z.y[1])) state.zoomY = [z.y[0], z.y[1]]; draw(); }
+    function setZoom(z){
+      if (!z) return;
+      if (z.x && isFinite(z.x[0]) && isFinite(z.x[1])) state.zoomX = [z.x[0], z.x[1]];
+      if (z.y && isFinite(z.y[0]) && isFinite(z.y[1])) state.zoomY = [z.y[0], z.y[1]];
+      draw();
+    }
     function setYAxisLabel(label){ yAxisLabel = label; draw(); }
     return { setData, resetZoom, setHoverSeries, onHover, getZoom, getDomain, setZoom, setYAxisLabel };
   }
@@ -4237,8 +4295,10 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       for (let i=0;i<=xticks;i++){
         const x=M.left+i*(W-(M.left+M.right))/xticks; const v=tickVals[i]; const label = fmtDate(v); const off = 24; ctx.fillText(label, x-off, H-(M.bottom-18));
       }
-      for (let i=0;i<=yticks;i++){ const y=H-M.bottom - i*(H-(M.top+M.bottom))/yticks; const v=yDomain[0]+i*(yDomain[1]-yDomain[0])/yticks; ctx.fillText(fmt2(v), 10, y+4); }
-      ctx.fillStyle='#e8eaed'; ctx.font='bold 13px system-ui, -apple-system, Segoe UI, Roboto, Arial'; ctx.fillText('Time', W/2-20, H-6); ctx.save(); ctx.translate(12,H/2+20); ctx.rotate(-Math.PI/2); ctx.fillText('Followers',0,0); ctx.restore();
+      ctx.textAlign = 'right';
+      for (let i=0;i<=yticks;i++){ const y=H-M.bottom - i*(H-(M.top+M.bottom))/yticks; const v=yDomain[0]+i*(yDomain[1]-yDomain[0])/yticks; ctx.fillText(fmt2(v), 50, y+4); }
+      ctx.textAlign = 'left';
+      ctx.fillStyle='#e8eaed'; ctx.font='bold 13px system-ui, -apple-system, Segoe UI, Roboto, Arial'; ctx.fillText('Time', W/2-20, H-6);
     }
     function drawComparisonLine(){
       if (!state.comparisonLine) return;
@@ -5390,6 +5450,12 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         VIEWS_TYPE_STORAGE_KEY,
         BEST_TIME_PREFS_KEY,
         CHART_MODE_STORAGE_KEY,
+        STACKED_WINDOW_STORAGE_MIN_KEYS.interaction,
+        STACKED_WINDOW_STORAGE_MIN_KEYS.views,
+        STACKED_WINDOW_STORAGE_MIN_KEYS.viewsPerPerson,
+        STACKED_WINDOW_STORAGE_KEYS.interaction,
+        STACKED_WINDOW_STORAGE_KEYS.views,
+        STACKED_WINDOW_STORAGE_KEYS.viewsPerPerson,
         LEGACY_CHART_MODE_KEYS.interaction,
         LEGACY_CHART_MODE_KEYS.views,
         LEGACY_CHART_MODE_KEYS.viewsPerPerson
@@ -7324,7 +7390,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     }
 
     // Function to update first 24 hours chart
-    function updateFirst24HoursChart(timeWindowMinutes){
+    function updateFirst24HoursChart(minMinutes, maxMinutes){
       const user = resolveUserForKey(metrics, currentUserKey);
       if (!user) return false;
       const colorFor = makeColorMap(user);
@@ -7344,7 +7410,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           if (!hasPoints && pts.length) {
             hasPoints = pts.some((pt)=>{
               const minutesSinceCreation = (pt.t - postTime) / (60 * 1000);
-              return minutesSinceCreation >= 0 && minutesSinceCreation <= timeWindowMinutes;
+              return minutesSinceCreation >= minMinutes && minutesSinceCreation <= maxMinutes;
             });
           }
           const owner = isVirtual ? (p?.ownerHandle || '') : (user?.handle || '');
@@ -7353,7 +7419,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           out.push({ id: pid, label, color, points: pts, url: absUrl(p.url, pid), postTime: postTime }); }
         return out; })();
       const yAxisLabel = useUnique ? 'Viewers' : 'Total Views';
-      first24HoursChart.setData(f24Series, timeWindowMinutes);
+      first24HoursChart.setData(f24Series, minMinutes, maxMinutes);
       // Update chart label by recreating it with new label
       const canvas = $('#first24HoursChart');
       if (canvas) {
@@ -7364,7 +7430,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       return hasPoints;
     }
 
-    function updateViewsPerPersonChart(timeWindowMinutes){
+    function updateViewsPerPersonChart(minMinutes, maxMinutes){
       const user = resolveUserForKey(metrics, currentUserKey);
       if (!user) return false;
       const colorFor = makeColorMap(user);
@@ -7388,7 +7454,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           if (!hasPoints && pts.length) {
             hasPoints = pts.some((pt)=>{
               const minutesSinceCreation = (pt.t - postTime) / (60 * 1000);
-              return minutesSinceCreation >= 0 && minutesSinceCreation <= timeWindowMinutes;
+              return minutesSinceCreation >= minMinutes && minutesSinceCreation <= maxMinutes;
             });
           }
           const owner = isVirtual ? (p?.ownerHandle || '') : (user?.handle || '');
@@ -7396,7 +7462,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           // Include all posts with post_time, even if they have no snapshots or no snapshots in the time window
           out.push({ id: pid, label, color, points: pts, url: absUrl(p.url, pid), postTime: postTime }); }
         return out; })();
-      viewsPerPersonChart.setData(vppSeries, timeWindowMinutes);
+      viewsPerPersonChart.setData(vppSeries, minMinutes, maxMinutes);
       return hasPoints;
     }
 
@@ -7428,7 +7494,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       viewsPerPersonTimeChart.setData(vppSeries);
     }
 
-    function updateInteractionRateStackedChart(timeWindowMinutes){
+    function updateInteractionRateStackedChart(minMinutes, maxMinutes){
       const user = resolveUserForKey(metrics, currentUserKey);
       if (!user) return false;
       const colorFor = makeColorMap(user);
@@ -7447,7 +7513,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           if (!hasPoints && pts.length) {
             hasPoints = pts.some((pt)=>{
               const minutesSinceCreation = (pt.t - postTime) / (60 * 1000);
-              return minutesSinceCreation >= 0 && minutesSinceCreation <= timeWindowMinutes;
+              return minutesSinceCreation >= minMinutes && minutesSinceCreation <= maxMinutes;
             });
           }
           const owner = isVirtual ? (p?.ownerHandle || '') : (user?.handle || '');
@@ -7457,7 +7523,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         }
         return out;
       })();
-      interactionRateStackedChart.setData(stackedSeries, timeWindowMinutes);
+      interactionRateStackedChart.setData(stackedSeries, minMinutes, maxMinutes);
       return hasPoints;
     }
 
@@ -7814,11 +7880,54 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           try {
             const useUnique = viewsChartType === 'unique';
             const isVirtual = isVirtualUser(user);
+            clampStackedSliderToData({
+              minId: '#interactionRateSliderMin',
+              maxId: '#interactionRateSliderMax',
+              trackId: '#interactionRateSliderTrack',
+              labelId: '#interactionRateSliderValue',
+              minKey: STACKED_WINDOW_STORAGE_MIN_KEYS.interaction,
+              maxKey: STACKED_WINDOW_STORAGE_KEYS.interaction,
+              getMaxMinutes: () => computeStackedMaxMinutes(user, visibleSet, (s)=> {
+                const t = s.t;
+                const rate = interactionRate(s);
+                return t != null && rate != null;
+              })
+            });
+            clampStackedSliderToData({
+              minId: '#first24HoursSliderMin',
+              maxId: '#first24HoursSliderMax',
+              trackId: '#first24HoursSliderTrack',
+              labelId: '#first24HoursSliderValue',
+              minKey: STACKED_WINDOW_STORAGE_MIN_KEYS.views,
+              maxKey: STACKED_WINDOW_STORAGE_KEYS.views,
+              getMaxMinutes: () => computeStackedMaxMinutes(user, visibleSet, (s)=> {
+                const t = s.t;
+                const v = useUnique ? s.uv : s.views;
+                return t != null && v != null;
+              })
+            });
+            clampStackedSliderToData({
+              minId: '#viewsPerPersonSliderMin',
+              maxId: '#viewsPerPersonSliderMax',
+              trackId: '#viewsPerPersonSliderTrack',
+              labelId: '#viewsPerPersonSliderValue',
+              minKey: STACKED_WINDOW_STORAGE_MIN_KEYS.viewsPerPerson,
+              maxKey: STACKED_WINDOW_STORAGE_KEYS.viewsPerPerson,
+              getMaxMinutes: () => computeStackedMaxMinutes(user, visibleSet, (s)=> {
+                const t = s.t;
+                const totalViews = num(s.views);
+                const uniqueViews = num(s.uv);
+                return t != null && totalViews != null && uniqueViews != null && uniqueViews > 0;
+              })
+            });
             const series = computeSeriesForUser(user, [], colorFor, useUnique)
               .filter(s=>visibleSet.has(s.id))
               .map(s=>({ ...s, url: absUrl(user.posts?.[s.id]?.url, s.id) }));
             chart.setData(series);
-            updateInteractionRateStackedChart(parseInt($('#interactionRateSlider')?.value) || STACKED_WINDOW_MINUTES_DEFAULT);
+            {
+              const range = getStackedRangeFromInputs('#interactionRateSliderMin', '#interactionRateSliderMax');
+              updateInteractionRateStackedChart(range.min, range.max);
+            }
             // Time chart: cumulative views by time
             const vSeries = (function(){
               const out=[]; for (const [pid,p] of Object.entries(user.posts||{})){
@@ -7839,9 +7948,15 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
             // Views Per Person time chart: ratio over absolute time
             updateViewsPerPersonTimeChart();
             // Views Per Person chart: total views / unique views over time since post creation
-            updateViewsPerPersonChart(parseInt($('#viewsPerPersonSlider')?.value) || STACKED_WINDOW_MINUTES_DEFAULT);
+            {
+              const range = getStackedRangeFromInputs('#viewsPerPersonSliderMin', '#viewsPerPersonSliderMax');
+              updateViewsPerPersonChart(range.min, range.max);
+            }
             // First 24 hours chart: views over time since post creation
-            updateFirst24HoursChart(parseInt($('#first24HoursSlider')?.value) || STACKED_WINDOW_MINUTES_DEFAULT);
+            {
+              const range = getStackedRangeFromInputs('#first24HoursSliderMin', '#first24HoursSliderMax');
+              updateFirst24HoursChart(range.min, range.max);
+            }
             // Only update compare charts if no compare users are selected
             if (compareUsers.size === 0){
               // Update unfiltered totals cards for single user
@@ -7954,8 +8069,6 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       if (!skipRestoreZoom) {
         try {
           const z = zoomStates[currentUserKey] || {};
-          if (z.scatter) chart.setZoom(z.scatter);
-          if (z.interactionStacked) interactionRateStackedChart.setZoom(z.interactionStacked);
           if (z.viewsPerPerson) viewsPerPersonChart.setZoom(z.viewsPerPerson);
           if (z.viewsPerPersonTime) viewsPerPersonTimeChart.setZoom(z.viewsPerPersonTime);
           if (z.views) viewsChart.setZoom(z.views);
@@ -8034,9 +8147,52 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           interactionRateStackedChart.resetZoom();
           viewsPerPersonChart.resetZoom();
           viewsPerPersonTimeChart.resetZoom();
+          clampStackedSliderToData({
+            minId: '#interactionRateSliderMin',
+            maxId: '#interactionRateSliderMax',
+            trackId: '#interactionRateSliderTrack',
+            labelId: '#interactionRateSliderValue',
+            minKey: STACKED_WINDOW_STORAGE_MIN_KEYS.interaction,
+            maxKey: STACKED_WINDOW_STORAGE_KEYS.interaction,
+            getMaxMinutes: () => computeStackedMaxMinutes(user, visibleSet, (s)=> {
+              const t = s.t;
+              const rate = interactionRate(s);
+              return t != null && rate != null;
+            })
+          });
+          clampStackedSliderToData({
+            minId: '#first24HoursSliderMin',
+            maxId: '#first24HoursSliderMax',
+            trackId: '#first24HoursSliderTrack',
+            labelId: '#first24HoursSliderValue',
+            minKey: STACKED_WINDOW_STORAGE_MIN_KEYS.views,
+            maxKey: STACKED_WINDOW_STORAGE_KEYS.views,
+            getMaxMinutes: () => computeStackedMaxMinutes(user, visibleSet, (s)=> {
+              const t = s.t;
+              const v = viewsChartType === 'unique' ? s.uv : s.views;
+              return t != null && v != null;
+            })
+          });
+          clampStackedSliderToData({
+            minId: '#viewsPerPersonSliderMin',
+            maxId: '#viewsPerPersonSliderMax',
+            trackId: '#viewsPerPersonSliderTrack',
+            labelId: '#viewsPerPersonSliderValue',
+            minKey: STACKED_WINDOW_STORAGE_MIN_KEYS.viewsPerPerson,
+            maxKey: STACKED_WINDOW_STORAGE_KEYS.viewsPerPerson,
+            getMaxMinutes: () => computeStackedMaxMinutes(user, visibleSet, (s)=> {
+              const t = s.t;
+              const totalViews = num(s.views);
+              const uniqueViews = num(s.uv);
+              return t != null && totalViews != null && uniqueViews != null && uniqueViews > 0;
+            })
+          });
           const useUnique = viewsChartType === 'unique';
           chart.setData(computeSeriesForUser(user, [], colorFor, useUnique).filter(s=>visibleSet.has(s.id)).map(s=>({ ...s, url: absUrl(user.posts?.[s.id]?.url, s.id) })));
-          updateInteractionRateStackedChart(parseInt($('#interactionRateSlider')?.value) || STACKED_WINDOW_MINUTES_DEFAULT);
+          {
+            const range = getStackedRangeFromInputs('#interactionRateSliderMin', '#interactionRateSliderMax');
+            updateInteractionRateStackedChart(range.min, range.max);
+          }
           // Refresh the cumulative views time series to reflect current visibility
           const vSeries = (function(){
             const out=[]; for (const [vpid,p] of Object.entries(user.posts||{})){
@@ -8051,9 +8207,15 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           viewsChart.setData(vSeries);
           updateViewsPerPersonTimeChart();
           // Refresh Views Per Person chart
-          updateViewsPerPersonChart(parseInt($('#viewsPerPersonSlider')?.value) || STACKED_WINDOW_MINUTES_DEFAULT);
+          {
+            const range = getStackedRangeFromInputs('#viewsPerPersonSliderMin', '#viewsPerPersonSliderMax');
+            updateViewsPerPersonChart(range.min, range.max);
+          }
           // Update first 24 hours chart
-          updateFirst24HoursChart(parseInt($('#first24HoursSlider')?.value) || STACKED_WINDOW_MINUTES_DEFAULT);
+          {
+            const range = getStackedRangeFromInputs('#first24HoursSliderMin', '#first24HoursSliderMax');
+            updateFirst24HoursChart(range.min, range.max);
+          }
           // (likes total chart is unfiltered; no need to refresh here)
           updateSummaryMetrics(user, visibleSet);
           try {
@@ -8250,10 +8412,20 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       if (allOverTimeTitle) allOverTimeTitle.textContent = `${prefix} over Time`;
     }
 
+    function syncYAxisLabels(type = viewsChartType){
+      const viewsLabel = type === 'unique' ? 'Viewers' : 'Total Views';
+      document.querySelectorAll('[data-axis="views"]').forEach((label)=>{
+        label.textContent = viewsLabel;
+      });
+    }
+
     function applyDefaultInteractionRateZoom(userKey){
-      if (!zoomStatesLoaded || !userKey || !chart) return;
+      if (!userKey || !chart || !interactionRateStackedChart) return;
       if (defaultInteractionZoomApplied.has(userKey)) return;
+      chart.resetZoom();
+      interactionRateStackedChart.resetZoom();
       chart.setZoom({ y: [0, INTERACTION_RATE_DEFAULT_ZOOM_Y_MAX] });
+      interactionRateStackedChart.setZoom({ y: [0, INTERACTION_RATE_DEFAULT_ZOOM_Y_MAX] });
       defaultInteractionZoomApplied.add(userKey);
     }
 
@@ -8292,6 +8464,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         viewsChart.setYAxisLabel(yAxisLabel);
         first24HoursChart.setYAxisLabel(yAxisLabel);
         syncViewsHeaders(type);
+        syncYAxisLabels(type);
         
         // Immediately clear data to prevent hovering over stale data from wrong mode
         chart.setData([]);
@@ -8348,59 +8521,194 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     function normalizeStackedWindowMinutes(value, fallback = STACKED_WINDOW_MINUTES_DEFAULT){
       const raw = Number(value);
       if (!Number.isFinite(raw) || raw <= 0) return fallback;
-      const stepped = Math.round(raw / 15) * 15;
-      return clamp(stepped, 15, STACKED_WINDOW_MINUTES_MAX);
+      const rounded = Math.round(raw);
+      return clamp(rounded, 1, STACKED_WINDOW_MINUTES_MAX);
     }
 
-    function loadStackedWindowMinutes(key){
-      try { return normalizeStackedWindowMinutes(localStorage.getItem(key)); } catch { return STACKED_WINDOW_MINUTES_DEFAULT; }
+    function normalizeStackedWindowStartMinutes(value, fallback = 0){
+      const raw = Number(value);
+      if (!Number.isFinite(raw) || raw < 0) return fallback;
+      const rounded = Math.round(raw);
+      return clamp(rounded, 0, STACKED_WINDOW_MINUTES_MAX - 1);
     }
 
-    function saveStackedWindowMinutes(key, minutes){
-      const normalized = normalizeStackedWindowMinutes(minutes);
-      try { localStorage.setItem(key, String(normalized)); } catch {}
-      try { chrome.storage.local.set({ [key]: normalized }); } catch {}
-      return normalized;
+    function normalizeStackedWindowRange(minMinutes, maxMinutes){
+      let min = normalizeStackedWindowStartMinutes(minMinutes, 0);
+      let max = normalizeStackedWindowMinutes(maxMinutes);
+      if (max < min + STACKED_WINDOW_MIN_GAP_MINUTES) {
+        max = clamp(min + STACKED_WINDOW_MIN_GAP_MINUTES, STACKED_WINDOW_MIN_GAP_MINUTES, STACKED_WINDOW_MINUTES_MAX);
+      }
+      if (min > max - STACKED_WINDOW_MIN_GAP_MINUTES) {
+        min = clamp(max - STACKED_WINDOW_MIN_GAP_MINUTES, 0, STACKED_WINDOW_MINUTES_MAX - STACKED_WINDOW_MIN_GAP_MINUTES);
+      }
+      return { min, max };
+    }
+
+    function loadStackedWindowRange(minKey, maxKey){
+      let min = 0;
+      let max = STACKED_WINDOW_MINUTES_DEFAULT;
+      try {
+        min = normalizeStackedWindowStartMinutes(localStorage.getItem(minKey), 0);
+        const storedMax = localStorage.getItem(maxKey);
+        if (storedMax !== null && storedMax !== undefined) {
+          max = normalizeStackedWindowMinutes(storedMax);
+        }
+      } catch {}
+      return normalizeStackedWindowRange(min, max);
+    }
+
+    function saveStackedWindowRange(minKey, maxKey, minMinutes, maxMinutes){
+      const { min, max } = normalizeStackedWindowRange(minMinutes, maxMinutes);
+      try { localStorage.setItem(minKey, String(min)); } catch {}
+      try { localStorage.setItem(maxKey, String(max)); } catch {}
+      try { chrome.storage.local.set({ [minKey]: min, [maxKey]: max }); } catch {}
+      return { min, max };
+    }
+
+    function setStackedRangeUI(trackEl, labelEl, minMinutes, maxMinutes){
+      if (!trackEl || !labelEl) return;
+      const startPct = clamp((minMinutes / STACKED_WINDOW_MINUTES_MAX) * 100, 0, 100);
+      const endPct = clamp((maxMinutes / STACKED_WINDOW_MINUTES_MAX) * 100, 0, 100);
+      trackEl.style.setProperty('--range-start', `${startPct}%`);
+      trackEl.style.setProperty('--range-end', `${endPct}%`);
+      labelEl.textContent = fmtStackedWindow(maxMinutes);
+    }
+
+    function getStackedRangeFromInputs(minSelector, maxSelector){
+      const minEl = $(minSelector);
+      const maxEl = $(maxSelector);
+      const rawMin = parseInt(minEl?.value);
+      const rawMax = parseInt(maxEl?.value);
+      return normalizeStackedWindowRange(rawMin, rawMax);
+    }
+
+    function computeStackedMaxMinutes(user, visibleSet, shouldIncludeSnapshot){
+      if (!user || !shouldIncludeSnapshot) return null;
+      let maxMinutes = null;
+      for (const [pid, p] of Object.entries(user.posts || {})){
+        if (!visibleSet.has(pid)) continue;
+        const postTime = getPostTimeStrict(p) || getPostTimeForRecency(p);
+        if (!postTime) continue;
+        for (const s of (p.snapshots || [])){
+          const t = s.t;
+          if (t == null || !shouldIncludeSnapshot(s)) continue;
+          const minutes = (Number(t) - Number(postTime)) / (60 * 1000);
+          if (!Number.isFinite(minutes) || minutes < 0) continue;
+          if (maxMinutes == null || minutes > maxMinutes) maxMinutes = minutes;
+        }
+      }
+      return maxMinutes;
+    }
+
+    function clampStackedSliderToData(opts){
+      const maxMinutesRaw = opts.getMaxMinutes?.();
+      if (!Number.isFinite(maxMinutesRaw)) return false;
+      const maxMinutes = clamp(Math.max(1, Math.floor(maxMinutesRaw)), 1, STACKED_WINDOW_MINUTES_MAX);
+      const minEl = $(opts.minId);
+      const maxEl = $(opts.maxId);
+      const trackEl = $(opts.trackId);
+      const labelEl = $(opts.labelId);
+      if (!minEl || !maxEl || !trackEl || !labelEl) return false;
+      const currentMax = parseInt(maxEl.value);
+      if (!Number.isFinite(currentMax) || currentMax <= maxMinutes) return false;
+      const currentMin = parseInt(minEl.value);
+      const range = saveStackedWindowRange(opts.minKey, opts.maxKey, currentMin, maxMinutes);
+      minEl.value = String(range.min);
+      maxEl.value = String(range.max);
+      setStackedRangeUI(trackEl, labelEl, range.min, range.max);
+      return true;
     }
 
     function applyStackedWindowDefaults(){
-      const interactionSlider = $('#interactionRateSlider');
-      if (interactionSlider) interactionSlider.value = String(loadStackedWindowMinutes(STACKED_WINDOW_STORAGE_KEYS.interaction));
-      const viewsSlider = $('#first24HoursSlider');
-      if (viewsSlider) viewsSlider.value = String(loadStackedWindowMinutes(STACKED_WINDOW_STORAGE_KEYS.views));
-      const viewsPerPersonSlider = $('#viewsPerPersonSlider');
-      if (viewsPerPersonSlider) viewsPerPersonSlider.value = String(loadStackedWindowMinutes(STACKED_WINDOW_STORAGE_KEYS.viewsPerPerson));
-    }
-
-    function syncStackedSliderValue(sliderEl, labelEl, minutes, storageKey){
-      if (!sliderEl || !labelEl) return;
-      const normalized = normalizeStackedWindowMinutes(minutes);
-      sliderEl.value = String(normalized);
-      labelEl.textContent = fmtStackedWindow(normalized);
-      if (storageKey) saveStackedWindowMinutes(storageKey, normalized);
+      const interactionRange = loadStackedWindowRange(
+        STACKED_WINDOW_STORAGE_MIN_KEYS.interaction,
+        STACKED_WINDOW_STORAGE_KEYS.interaction
+      );
+      const viewsRange = loadStackedWindowRange(
+        STACKED_WINDOW_STORAGE_MIN_KEYS.views,
+        STACKED_WINDOW_STORAGE_KEYS.views
+      );
+      const vppRange = loadStackedWindowRange(
+        STACKED_WINDOW_STORAGE_MIN_KEYS.viewsPerPerson,
+        STACKED_WINDOW_STORAGE_KEYS.viewsPerPerson
+      );
+      const interactionMin = $('#interactionRateSliderMin');
+      const interactionMax = $('#interactionRateSliderMax');
+      const interactionTrack = $('#interactionRateSliderTrack');
+      const interactionLabel = $('#interactionRateSliderValue');
+      if (interactionMin) interactionMin.value = String(interactionRange.min);
+      if (interactionMax) interactionMax.value = String(interactionRange.max);
+      setStackedRangeUI(interactionTrack, interactionLabel, interactionRange.min, interactionRange.max);
+      const viewsMin = $('#first24HoursSliderMin');
+      const viewsMax = $('#first24HoursSliderMax');
+      const viewsTrack = $('#first24HoursSliderTrack');
+      const viewsLabel = $('#first24HoursSliderValue');
+      if (viewsMin) viewsMin.value = String(viewsRange.min);
+      if (viewsMax) viewsMax.value = String(viewsRange.max);
+      setStackedRangeUI(viewsTrack, viewsLabel, viewsRange.min, viewsRange.max);
+      const vppMin = $('#viewsPerPersonSliderMin');
+      const vppMax = $('#viewsPerPersonSliderMax');
+      const vppTrack = $('#viewsPerPersonSliderTrack');
+      const vppLabel = $('#viewsPerPersonSliderValue');
+      if (vppMin) vppMin.value = String(vppRange.min);
+      if (vppMax) vppMax.value = String(vppRange.max);
+      setStackedRangeUI(vppTrack, vppLabel, vppRange.min, vppRange.max);
     }
 
     function ensureStackedWindowHasData(){
-      const interactionSlider = $('#interactionRateSlider');
-      const interactionLabel = $('#interactionRateSliderValue');
-      const interactionMinutes = parseInt(interactionSlider?.value) || STACKED_WINDOW_MINUTES_DEFAULT;
-      if (!updateInteractionRateStackedChart(interactionMinutes) && interactionMinutes < STACKED_WINDOW_MINUTES_MAX) {
-        syncStackedSliderValue(interactionSlider, interactionLabel, STACKED_WINDOW_MINUTES_MAX, STACKED_WINDOW_STORAGE_KEYS.interaction);
-        updateInteractionRateStackedChart(STACKED_WINDOW_MINUTES_MAX);
+      const interactionMin = parseInt($('#interactionRateSliderMin')?.value) || 0;
+      const interactionMax = parseInt($('#interactionRateSliderMax')?.value) || STACKED_WINDOW_MINUTES_DEFAULT;
+      if (!updateInteractionRateStackedChart(interactionMin, interactionMax) && interactionMax < STACKED_WINDOW_MINUTES_MAX) {
+        const range = saveStackedWindowRange(
+          STACKED_WINDOW_STORAGE_MIN_KEYS.interaction,
+          STACKED_WINDOW_STORAGE_KEYS.interaction,
+          interactionMin,
+          STACKED_WINDOW_MINUTES_MAX
+        );
+        const minEl = $('#interactionRateSliderMin');
+        const maxEl = $('#interactionRateSliderMax');
+        const trackEl = $('#interactionRateSliderTrack');
+        const labelEl = $('#interactionRateSliderValue');
+        if (minEl) minEl.value = String(range.min);
+        if (maxEl) maxEl.value = String(range.max);
+        setStackedRangeUI(trackEl, labelEl, range.min, range.max);
+        updateInteractionRateStackedChart(range.min, range.max);
       }
-      const viewsSlider = $('#first24HoursSlider');
-      const viewsLabel = $('#first24HoursSliderValue');
-      const viewsMinutes = parseInt(viewsSlider?.value) || STACKED_WINDOW_MINUTES_DEFAULT;
-      if (!updateFirst24HoursChart(viewsMinutes) && viewsMinutes < STACKED_WINDOW_MINUTES_MAX) {
-        syncStackedSliderValue(viewsSlider, viewsLabel, STACKED_WINDOW_MINUTES_MAX, STACKED_WINDOW_STORAGE_KEYS.views);
-        updateFirst24HoursChart(STACKED_WINDOW_MINUTES_MAX);
+      const viewsMin = parseInt($('#first24HoursSliderMin')?.value) || 0;
+      const viewsMax = parseInt($('#first24HoursSliderMax')?.value) || STACKED_WINDOW_MINUTES_DEFAULT;
+      if (!updateFirst24HoursChart(viewsMin, viewsMax) && viewsMax < STACKED_WINDOW_MINUTES_MAX) {
+        const range = saveStackedWindowRange(
+          STACKED_WINDOW_STORAGE_MIN_KEYS.views,
+          STACKED_WINDOW_STORAGE_KEYS.views,
+          viewsMin,
+          STACKED_WINDOW_MINUTES_MAX
+        );
+        const minEl = $('#first24HoursSliderMin');
+        const maxEl = $('#first24HoursSliderMax');
+        const trackEl = $('#first24HoursSliderTrack');
+        const labelEl = $('#first24HoursSliderValue');
+        if (minEl) minEl.value = String(range.min);
+        if (maxEl) maxEl.value = String(range.max);
+        setStackedRangeUI(trackEl, labelEl, range.min, range.max);
+        updateFirst24HoursChart(range.min, range.max);
       }
-      const vppSlider = $('#viewsPerPersonSlider');
-      const vppLabel = $('#viewsPerPersonSliderValue');
-      const vppMinutes = parseInt(vppSlider?.value) || STACKED_WINDOW_MINUTES_DEFAULT;
-      if (!updateViewsPerPersonChart(vppMinutes) && vppMinutes < STACKED_WINDOW_MINUTES_MAX) {
-        syncStackedSliderValue(vppSlider, vppLabel, STACKED_WINDOW_MINUTES_MAX, STACKED_WINDOW_STORAGE_KEYS.viewsPerPerson);
-        updateViewsPerPersonChart(STACKED_WINDOW_MINUTES_MAX);
+      const vppMin = parseInt($('#viewsPerPersonSliderMin')?.value) || 0;
+      const vppMax = parseInt($('#viewsPerPersonSliderMax')?.value) || STACKED_WINDOW_MINUTES_DEFAULT;
+      if (!updateViewsPerPersonChart(vppMin, vppMax) && vppMax < STACKED_WINDOW_MINUTES_MAX) {
+        const range = saveStackedWindowRange(
+          STACKED_WINDOW_STORAGE_MIN_KEYS.viewsPerPerson,
+          STACKED_WINDOW_STORAGE_KEYS.viewsPerPerson,
+          vppMin,
+          STACKED_WINDOW_MINUTES_MAX
+        );
+        const minEl = $('#viewsPerPersonSliderMin');
+        const maxEl = $('#viewsPerPersonSliderMax');
+        const trackEl = $('#viewsPerPersonSliderTrack');
+        const labelEl = $('#viewsPerPersonSliderValue');
+        if (minEl) minEl.value = String(range.min);
+        if (maxEl) maxEl.value = String(range.max);
+        setStackedRangeUI(trackEl, labelEl, range.min, range.max);
+        updateViewsPerPersonChart(range.min, range.max);
       }
     }
 
@@ -8458,6 +8766,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     setGlobalChartMode(chartsMode, { persist: shouldPersistLegacyChartMode });
     syncViewsHeaders(viewsChartType);
     syncViewsPills(viewsChartType);
+    syncYAxisLabels(viewsChartType);
 
 
     // Typeahead suggestions
@@ -9435,8 +9744,8 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
     // Persist zoom on full page reload/navigation
     function persistZoom(){
       const z = zoomStates[currentUserKey] || (zoomStates[currentUserKey] = {});
-      z.scatter = chart.getZoom();
-      z.interactionStacked = interactionRateStackedChart.getZoom();
+      delete z.scatter;
+      delete z.interactionStacked;
       z.viewsPerPerson = viewsPerPersonChart.getZoom();
       z.viewsPerPersonTime = viewsPerPersonTimeChart.getZoom();
       z.views = viewsChart.getZoom();
@@ -9446,6 +9755,18 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
       z.followers = followersChart.getZoom();
       z.viewsAll = allViewsChart.getZoom();
       try { chrome.storage.local.set({ zoomStates }); } catch {}
+    }
+    function resetAllCharts(){
+      chart.resetZoom();
+      interactionRateStackedChart.resetZoom();
+      viewsPerPersonChart.resetZoom();
+      viewsPerPersonTimeChart.resetZoom();
+      viewsChart.resetZoom();
+      first24HoursChart.resetZoom();
+      followersChart.resetZoom();
+      allViewsChart.resetZoom();
+      allLikesChart.resetZoom();
+      cameosChart.resetZoom();
     }
     window.addEventListener('beforeunload', persistZoom);
     window.addEventListener('beforeunload', saveSessionCache);
@@ -9536,7 +9857,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         if (!u) return;
         visibleSet.clear();
         Object.keys(u.posts||{}).forEach(pid=>visibleSet.add(pid));
-        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        resetAllCharts();
         refreshUserUI({ skipRestoreZoom: true });
         persistVisibility();
       });
@@ -9544,7 +9865,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         currentVisibilitySource = 'hideAll';
         setListActionActive('hideAll');
         visibleSet.clear();
-        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        resetAllCharts();
         refreshUserUI({ preserveEmpty: true, skipRestoreZoom: true });
         persistVisibility();
       });
@@ -9569,7 +9890,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         });
         visibleSet.clear();
         sorted.forEach(it=>visibleSet.add(it.pid));
-        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        resetAllCharts();
         refreshUserUI({ preserveEmpty: true, skipRestoreZoom: true }); persistVisibility();
       });
       $('#pastWeek').addEventListener('click', ()=>{
@@ -9593,64 +9914,113 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         });
         visibleSet.clear();
         sorted.forEach(it=>visibleSet.add(it.pid));
-        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        resetAllCharts();
         refreshUserUI({ preserveEmpty: true, skipRestoreZoom: true }); persistVisibility();
       });
       // Stacked view sliders
-      function fmtSliderTime(minutes){
-        if (minutes < 60) return `${minutes}m`;
-        const totalMinutes = Math.round(minutes);
-        const days = Math.floor(totalMinutes / 1440);
-        const hours = Math.floor((totalMinutes % 1440) / 60);
-        const mins = totalMinutes % 60;
-        if (days > 0) {
-          if (hours === 0 && mins === 0) return `${days}d`;
-          if (mins === 0) return `${days}d ${hours}h`;
-          if (hours === 0) return `${days}d ${mins}m`;
-          return `${days}d ${hours}h ${mins}m`;
+    function wireStackedRangeSlider(opts){
+      const minEl = $(opts.minId);
+      const maxEl = $(opts.maxId);
+      const trackEl = $(opts.trackId);
+      const labelEl = $(opts.labelId);
+      if (!minEl || !maxEl || !trackEl || !labelEl) return;
+      minEl.max = String(STACKED_WINDOW_MINUTES_MAX);
+      maxEl.max = String(STACKED_WINDOW_MINUTES_MAX);
+      const setThumbZ = (minTop)=>{
+        if (minTop) {
+          minEl.style.zIndex = '6';
+          maxEl.style.zIndex = '5';
+        } else {
+          minEl.style.zIndex = '5';
+          maxEl.style.zIndex = '6';
         }
-        if (mins === 0) return `${hours}h`;
-        return `${hours}h ${mins}m`;
-      }
-      const interactionRateSlider = $('#interactionRateSlider');
-      const interactionRateSliderValue = $('#interactionRateSliderValue');
-      if (interactionRateSlider && interactionRateSliderValue) {
-        interactionRateSlider.max = STACKED_WINDOW_MINUTES_MAX;
-        interactionRateSlider.addEventListener('input', (e)=>{
-          const minutes = parseInt(e.target.value);
-          const normalized = saveStackedWindowMinutes(STACKED_WINDOW_STORAGE_KEYS.interaction, minutes);
-          interactionRateSliderValue.textContent = fmtSliderTime(normalized);
-          if (normalized !== minutes) interactionRateSlider.value = String(normalized);
-          updateInteractionRateStackedChart(normalized);
-        });
-        interactionRateSliderValue.textContent = fmtSliderTime(parseInt(interactionRateSlider.value) || STACKED_WINDOW_MINUTES_DEFAULT);
-      }
-      const slider = $('#first24HoursSlider');
-      const sliderValue = $('#first24HoursSliderValue');
-      if (slider && sliderValue) {
-        slider.max = STACKED_WINDOW_MINUTES_MAX;
-        slider.addEventListener('input', (e)=>{
-          const minutes = parseInt(e.target.value);
-          const normalized = saveStackedWindowMinutes(STACKED_WINDOW_STORAGE_KEYS.views, minutes);
-          sliderValue.textContent = fmtSliderTime(normalized);
-          if (normalized !== minutes) slider.value = String(normalized);
-          updateFirst24HoursChart(normalized);
-        });
-        sliderValue.textContent = fmtSliderTime(parseInt(slider.value) || STACKED_WINDOW_MINUTES_DEFAULT);
-      }
-      const viewsPerPersonSlider = $('#viewsPerPersonSlider');
-      const viewsPerPersonSliderValue = $('#viewsPerPersonSliderValue');
-      if (viewsPerPersonSlider && viewsPerPersonSliderValue) {
-        viewsPerPersonSlider.max = STACKED_WINDOW_MINUTES_MAX;
-        viewsPerPersonSlider.addEventListener('input', (e)=>{
-          const minutes = parseInt(e.target.value);
-          const normalized = saveStackedWindowMinutes(STACKED_WINDOW_STORAGE_KEYS.viewsPerPerson, minutes);
-          viewsPerPersonSliderValue.textContent = fmtSliderTime(normalized);
-          if (normalized !== minutes) viewsPerPersonSlider.value = String(normalized);
-          updateViewsPerPersonChart(normalized);
-        });
-        viewsPerPersonSliderValue.textContent = fmtSliderTime(parseInt(viewsPerPersonSlider.value) || STACKED_WINDOW_MINUTES_DEFAULT);
-      }
+      };
+      const updateThumbPriority = ()=>{
+        if (minEl.classList.contains('is-active') || maxEl.classList.contains('is-active')) return;
+        setThumbZ(true);
+      };
+      const syncThumbZForPointer = (clientX)=>{
+        const rect = trackEl.getBoundingClientRect();
+        if (!rect.width) return;
+        const minVal = parseInt(minEl.value);
+        const maxVal = parseInt(maxEl.value);
+        const minX = rect.left + (minVal / STACKED_WINDOW_MINUTES_MAX) * rect.width;
+        const maxX = rect.left + (maxVal / STACKED_WINDOW_MINUTES_MAX) * rect.width;
+        const minTop = Math.abs(clientX - minX) <= Math.abs(clientX - maxX);
+        setThumbZ(minTop);
+      };
+      const setActiveThumb = (activeEl, otherEl)=>{
+        activeEl.classList.add('is-active');
+        otherEl.classList.remove('is-active');
+        setThumbZ(activeEl === minEl);
+      };
+      const clearActiveThumb = ()=>{
+        minEl.classList.remove('is-active');
+        maxEl.classList.remove('is-active');
+        updateThumbPriority();
+      };
+      const onInput = (isMin)=>{
+        const rawMin = parseInt(minEl.value);
+        const rawMax = parseInt(maxEl.value);
+        let min = normalizeStackedWindowStartMinutes(rawMin, 0);
+        let max = Number.isFinite(rawMax) ? Math.round(rawMax) : STACKED_WINDOW_MINUTES_DEFAULT;
+        max = clamp(max, STACKED_WINDOW_MIN_GAP_MINUTES, STACKED_WINDOW_MINUTES_MAX);
+        if (isMin) {
+          if (min >= max) min = clamp(max - STACKED_WINDOW_MIN_GAP_MINUTES, 0, STACKED_WINDOW_MINUTES_MAX - STACKED_WINDOW_MIN_GAP_MINUTES);
+        } else {
+          if (max <= min) max = clamp(min + STACKED_WINDOW_MIN_GAP_MINUTES, STACKED_WINDOW_MIN_GAP_MINUTES, STACKED_WINDOW_MINUTES_MAX);
+        }
+        if (isMin && min !== rawMin) minEl.value = String(min);
+        if (!isMin && max !== rawMax) maxEl.value = String(max);
+        const persisted = saveStackedWindowRange(opts.minKey, opts.maxKey, min, max);
+        minEl.value = String(persisted.min);
+        maxEl.value = String(persisted.max);
+        setStackedRangeUI(trackEl, labelEl, persisted.min, persisted.max);
+        updateThumbPriority();
+        opts.onChange(persisted.min, persisted.max);
+      };
+      minEl.addEventListener('focus', ()=> setActiveThumb(minEl, maxEl));
+      maxEl.addEventListener('focus', ()=> setActiveThumb(maxEl, minEl));
+      minEl.addEventListener('blur', clearActiveThumb);
+      maxEl.addEventListener('blur', clearActiveThumb);
+      trackEl.addEventListener('pointerdown', (e)=> syncThumbZForPointer(e.clientX), true);
+      trackEl.addEventListener('pointermove', (e)=> syncThumbZForPointer(e.clientX), true);
+      trackEl.addEventListener('pointerleave', updateThumbPriority);
+      minEl.addEventListener('input', ()=> onInput(true));
+      maxEl.addEventListener('input', ()=> onInput(false));
+      const initialRange = normalizeStackedWindowRange(parseInt(minEl.value), parseInt(maxEl.value));
+      minEl.value = String(initialRange.min);
+      maxEl.value = String(initialRange.max);
+      setStackedRangeUI(trackEl, labelEl, initialRange.min, initialRange.max);
+      updateThumbPriority();
+    }
+      wireStackedRangeSlider({
+        minId: '#interactionRateSliderMin',
+        maxId: '#interactionRateSliderMax',
+        trackId: '#interactionRateSliderTrack',
+        labelId: '#interactionRateSliderValue',
+        minKey: STACKED_WINDOW_STORAGE_MIN_KEYS.interaction,
+        maxKey: STACKED_WINDOW_STORAGE_KEYS.interaction,
+        onChange: (minMinutes, maxMinutes)=> updateInteractionRateStackedChart(minMinutes, maxMinutes)
+      });
+      wireStackedRangeSlider({
+        minId: '#first24HoursSliderMin',
+        maxId: '#first24HoursSliderMax',
+        trackId: '#first24HoursSliderTrack',
+        labelId: '#first24HoursSliderValue',
+        minKey: STACKED_WINDOW_STORAGE_MIN_KEYS.views,
+        maxKey: STACKED_WINDOW_STORAGE_KEYS.views,
+        onChange: (minMinutes, maxMinutes)=> updateFirst24HoursChart(minMinutes, maxMinutes)
+      });
+      wireStackedRangeSlider({
+        minId: '#viewsPerPersonSliderMin',
+        maxId: '#viewsPerPersonSliderMax',
+        trackId: '#viewsPerPersonSliderTrack',
+        labelId: '#viewsPerPersonSliderValue',
+        minKey: STACKED_WINDOW_STORAGE_MIN_KEYS.viewsPerPerson,
+        maxKey: STACKED_WINDOW_STORAGE_KEYS.viewsPerPerson,
+        onChange: (minMinutes, maxMinutes)=> updateViewsPerPersonChart(minMinutes, maxMinutes)
+      });
       $('#last5').addEventListener('click', ()=>{
         currentVisibilitySource = 'last5';
         setListActionActive('last5');
@@ -9670,7 +10040,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         const sorted = withTs.concat(noTs);
         visibleSet.clear();
         sorted.slice(0, 5).forEach(it=>visibleSet.add(it.pid));
-        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        resetAllCharts();
         refreshUserUI({ skipRestoreZoom: true }); persistVisibility();
       });
       $('#last10').addEventListener('click', ()=>{
@@ -9692,7 +10062,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         const sorted = withTs.concat(noTs);
         visibleSet.clear();
         sorted.slice(0, 10).forEach(it=>visibleSet.add(it.pid));
-        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        resetAllCharts();
         refreshUserUI({ skipRestoreZoom: true }); persistVisibility();
       });
       $('#top5').addEventListener('click', ()=>{
@@ -9723,7 +10093,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         });
         visibleSet.clear();
         sorted.slice(0, 5).forEach(it=>visibleSet.add(it.pid));
-        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        resetAllCharts();
         refreshUserUI({ skipRestoreZoom: true }); persistVisibility();
       });
       $('#top10').addEventListener('click', ()=>{
@@ -9754,7 +10124,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         });
         visibleSet.clear();
         sorted.slice(0, 10).forEach(it=>visibleSet.add(it.pid));
-        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        resetAllCharts();
         refreshUserUI({ skipRestoreZoom: true }); persistVisibility();
       });
       $('#bottom5').addEventListener('click', ()=>{
@@ -9831,7 +10201,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         })();
         visibleSet.clear();
         picked.forEach(it=>visibleSet.add(it.pid));
-        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        resetAllCharts();
         refreshUserUI({ skipRestoreZoom: true }); persistVisibility();
       });
       $('#bottom10').addEventListener('click', ()=>{
@@ -9908,7 +10278,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         })();
         visibleSet.clear();
         picked.forEach(it=>visibleSet.add(it.pid));
-        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        resetAllCharts();
         refreshUserUI({ skipRestoreZoom: true }); persistVisibility();
       });
 
@@ -9928,7 +10298,7 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         const stale = mapped.filter(x=>x.ageMs > TWENTY_FOUR_HOURS_MS);
         visibleSet.clear();
         stale.forEach(it=>visibleSet.add(it.pid));
-        chart.resetZoom(); interactionRateStackedChart.resetZoom(); viewsPerPersonChart.resetZoom(); viewsPerPersonTimeChart.resetZoom(); viewsChart.resetZoom(); first24HoursChart.resetZoom(); followersChart.resetZoom(); allViewsChart.resetZoom(); allLikesChart.resetZoom(); cameosChart.resetZoom();
+        resetAllCharts();
         refreshUserUI({ preserveEmpty: true, skipRestoreZoom: true }); persistVisibility();
       });
 
@@ -10006,6 +10376,69 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
           }
           chartModeLoaded = true;
         }
+      }
+      const storedInteractionMin = normalizeStackedWindowStartMinutes(st?.[STACKED_WINDOW_STORAGE_MIN_KEYS.interaction], null);
+      const storedInteractionMax = normalizeStackedWindowMinutes(st?.[STACKED_WINDOW_STORAGE_KEYS.interaction], null);
+      const storedViewsMin = normalizeStackedWindowStartMinutes(st?.[STACKED_WINDOW_STORAGE_MIN_KEYS.views], null);
+      const storedViewsMax = normalizeStackedWindowMinutes(st?.[STACKED_WINDOW_STORAGE_KEYS.views], null);
+      const storedVppMin = normalizeStackedWindowStartMinutes(st?.[STACKED_WINDOW_STORAGE_MIN_KEYS.viewsPerPerson], null);
+      const storedVppMax = normalizeStackedWindowMinutes(st?.[STACKED_WINDOW_STORAGE_KEYS.viewsPerPerson], null);
+      if (storedInteractionMin !== null || storedInteractionMax !== null) {
+        const range = normalizeStackedWindowRange(
+          storedInteractionMin ?? 0,
+          storedInteractionMax ?? STACKED_WINDOW_MINUTES_DEFAULT
+        );
+        const minEl = $('#interactionRateSliderMin');
+        const maxEl = $('#interactionRateSliderMax');
+        const trackEl = $('#interactionRateSliderTrack');
+        const labelEl = $('#interactionRateSliderValue');
+        if (minEl) minEl.value = String(range.min);
+        if (maxEl) maxEl.value = String(range.max);
+        setStackedRangeUI(trackEl, labelEl, range.min, range.max);
+        saveStackedWindowRange(
+          STACKED_WINDOW_STORAGE_MIN_KEYS.interaction,
+          STACKED_WINDOW_STORAGE_KEYS.interaction,
+          range.min,
+          range.max
+        );
+      }
+      if (storedViewsMin !== null || storedViewsMax !== null) {
+        const range = normalizeStackedWindowRange(
+          storedViewsMin ?? 0,
+          storedViewsMax ?? STACKED_WINDOW_MINUTES_DEFAULT
+        );
+        const minEl = $('#first24HoursSliderMin');
+        const maxEl = $('#first24HoursSliderMax');
+        const trackEl = $('#first24HoursSliderTrack');
+        const labelEl = $('#first24HoursSliderValue');
+        if (minEl) minEl.value = String(range.min);
+        if (maxEl) maxEl.value = String(range.max);
+        setStackedRangeUI(trackEl, labelEl, range.min, range.max);
+        saveStackedWindowRange(
+          STACKED_WINDOW_STORAGE_MIN_KEYS.views,
+          STACKED_WINDOW_STORAGE_KEYS.views,
+          range.min,
+          range.max
+        );
+      }
+      if (storedVppMin !== null || storedVppMax !== null) {
+        const range = normalizeStackedWindowRange(
+          storedVppMin ?? 0,
+          storedVppMax ?? STACKED_WINDOW_MINUTES_DEFAULT
+        );
+        const minEl = $('#viewsPerPersonSliderMin');
+        const maxEl = $('#viewsPerPersonSliderMax');
+        const trackEl = $('#viewsPerPersonSliderTrack');
+        const labelEl = $('#viewsPerPersonSliderValue');
+        if (minEl) minEl.value = String(range.min);
+        if (maxEl) maxEl.value = String(range.max);
+        setStackedRangeUI(trackEl, labelEl, range.min, range.max);
+        saveStackedWindowRange(
+          STACKED_WINDOW_STORAGE_MIN_KEYS.viewsPerPerson,
+          STACKED_WINDOW_STORAGE_KEYS.viewsPerPerson,
+          range.min,
+          range.max
+        );
       }
       const storedBestTimePrefs = normalizeBestTimePrefs(st?.[BEST_TIME_PREFS_KEY]);
       if (storedBestTimePrefs) {

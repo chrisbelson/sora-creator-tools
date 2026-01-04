@@ -54,6 +54,9 @@
   const FILTER_STEPS_MIN = [null, 180, 360, 720, 900, 1080, 1260, 'no_remixes'];
   const FILTER_LABELS = ['Filter', '<3 hours', '<6 hours', '<12 hours', '<15 hours', '<18 hours', '<21 hours', 'No Remixes'];
   const ALLOWED_VIDEO_EXTENSIONS = ['mp4', 'mov', 'webm']; // Sora-supported video formats
+  const MIN_PER_H = 60;
+  const MIN_PER_D = 1440;
+  const MIN_PER_Y = 525600;
 
   // Debug toggle for characters
   DEBUG.characters = false;
@@ -182,9 +185,6 @@
   function fmtAgeMin(ageMin) {
     if (!Number.isFinite(ageMin)) return '∞';
     const mTotal = Math.max(0, Math.floor(ageMin));
-    const MIN_PER_H = 60,
-      MIN_PER_D = 1440,
-      MIN_PER_Y = 525600;
     let r = mTotal;
     const y = Math.floor(r / MIN_PER_Y);
     r -= y * MIN_PER_Y;
@@ -696,13 +696,34 @@
     return nearest >= 1440 && diff <= windowMin;
   }
   const greenEmblemColor = () => 'hsla(120, 85%, 32%, 0.92)';
+  const SUPER_HOT_THRESHOLDS = [
+    { minLikes: 50, maxAgeMin: 60 },
+    { minLikes: 100, maxAgeMin: 120 },
+    { minLikes: 150, maxAgeMin: 180 },
+    { minLikes: 200, maxAgeMin: 240 },
+    { minLikes: 250, maxAgeMin: 300 },
+  ];
+  const FIRE_THRESHOLDS = [
+    { maxHours: 6, flames: '🔥🔥🔥' },
+    { maxHours: 12, flames: '🔥🔥' },
+    { maxHours: 18, flames: '🔥' },
+  ];
   function fireForAge(ageMin) {
     if (!Number.isFinite(ageMin)) return '';
-    const h = ageMin / 60;
-    if (h < 6) return '🔥🔥🔥';
-    if (h < 12) return '🔥🔥';
-    if (h < 18) return '🔥';
+    const h = ageMin / MIN_PER_H;
+    for (const rule of FIRE_THRESHOLDS) {
+      if (h < rule.maxHours) return rule.flames;
+    }
     return '';
+  }
+  function isSuperHotByRate(likes, ageMin) {
+    if (!Number.isFinite(ageMin)) return false;
+    const l = Number(likes);
+    if (!Number.isFinite(l) || l < 0) return false;
+    for (const rule of SUPER_HOT_THRESHOLDS) {
+      if (ageMin <= rule.maxAgeMin && l >= rule.minLikes) return true;
+    }
+    return false;
   }
 
   // Tooltip (1s delayed, cursor-follow)
@@ -1347,22 +1368,32 @@
     return pill;
   }
 
+  function badgeStateFor(likes, ageMin) {
+    return {
+      isSuperHot: isSuperHotByRate(likes, ageMin),
+      isNearDay: isNearWholeDay(ageMin),
+      isHot: likes >= 25,
+    };
+  }
+
   function badgeBgFor(id, meta) {
     if (!meta) return null;
     const ageMin = meta.ageMin;
     const likes = idToLikes.get(id) ?? 0;
-    if (likes >= 50 && Number.isFinite(ageMin) && ageMin < 60) return colorForAgeMin(0);
-    if (isNearWholeDay(ageMin)) return greenEmblemColor();
-    if (likes >= 25) return colorForAgeMin(ageMin);
+    const state = badgeStateFor(likes, ageMin);
+    if (state.isSuperHot) return colorForAgeMin(0);
+    if (state.isNearDay) return greenEmblemColor();
+    if (state.isHot) return colorForAgeMin(ageMin);
     return null;
   }
   function badgeEmojiFor(id, meta) {
     if (!meta) return '';
     const ageMin = meta.ageMin;
     const likes = idToLikes.get(id) ?? 0;
-    if (likes >= 50 && Number.isFinite(ageMin) && ageMin < 60) return '🔥🔥🔥🔥🔥';
-    if (isNearWholeDay(ageMin)) return '📝';
-    if (likes >= 25) return fireForAge(ageMin);
+    const state = badgeStateFor(likes, ageMin);
+    if (state.isSuperHot) return '🔥🔥🔥🔥🔥';
+    if (state.isNearDay) return '📝';
+    if (state.isHot) return fireForAge(ageMin);
     return '';
   }
 
@@ -1389,8 +1420,6 @@
 
     if (isNearWholeDay(ageMin, 15)) return null;
 
-    const MIN_PER_H = 60;
-    const MIN_PER_D = 1440;
     const a = Math.max(0, Math.floor(ageMin));
 
     if (a >= 7 * MIN_PER_D) {
@@ -1419,7 +1448,7 @@
     const id = extractIdFromCard(card);
     const likes = idToLikes.get(id) ?? 0;
     const ageMin = meta?.ageMin;
-    const isSuperHot = likes >= 50 && Number.isFinite(ageMin) && ageMin < 60;
+    const isSuperHot = isSuperHotByRate(likes, ageMin);
 
     const uv = idToUnique.get(id);
     const totalViews = idToViews.get(id);
@@ -2117,7 +2146,7 @@
 
     const meta = idToMeta.get(sid);
     const ageMin = meta?.ageMin;
-    const isSuperHot = (likes ?? 0) >= 50 && Number.isFinite(ageMin) && ageMin < 60;
+    const isSuperHot = isSuperHotByRate(likes ?? 0, ageMin);
 
     // Match feed badge format exactly
     const viewsStr = uv != null ? `👀 ${fmt(uv)}` : null;

@@ -232,7 +232,8 @@
       </div>
       <div class="chart-block">
         <h4 id="interactionRateTitle" class="chart-title">Interaction Rate vs. Viewers</h4>
-        <div class="chart-wrap">
+        <div class="chart-wrap chart-wrap--show-overflow">
+          <div class="chart-y-axis-label">Interaction Rate (%)</div>
           <div class="chart-canvas-stack">
             <canvas id="chart" class="chart-canvas" width="900" height="540"></canvas>
             <canvas id="interactionRateStackedChart" class="chart-canvas is-canvas-hidden" width="900" height="540"></canvas>
@@ -242,8 +243,12 @@
           <div id="interactionRateSliderWrap" class="chart-slider is-hidden">
             <div class="chart-slider-row">
               <label class="chart-slider-label">Time Window</label>
-              <input type="range" id="interactionRateSlider" min="15" max="21600" value="1440" step="15" class="chart-slider-input" />
-              <span id="interactionRateSliderValue" class="chart-slider-value">24h</span>
+              <div class="chart-slider-track" id="interactionRateSliderTrack">
+                <div class="chart-slider-range" id="interactionRateSliderRange"></div>
+                <input type="range" id="interactionRateSliderMin" min="0" max="21600" value="0" step="1" class="chart-slider-input chart-slider-input--min" />
+                <input type="range" id="interactionRateSliderMax" min="0" max="21600" value="1440" step="1" class="chart-slider-input chart-slider-input--max" />
+              </div>
+              <span id="interactionRateSliderValue" class="chart-slider-value">0m–24h</span>
             </div>
           </div>
         </div>
@@ -251,6 +256,7 @@
       <div class="chart-block">
         <h4 id="viewsChartTitle" class="chart-title">Total Views over Time</h4>
         <div class="chart-wrap chart-wrap-spaced">
+          <div class="chart-y-axis-label" data-axis="views">Total Views</div>
           <div class="chart-canvas-stack">
             <canvas id="viewsChart" class="chart-canvas" width="900" height="540"></canvas>
             <canvas id="first24HoursChart" class="chart-canvas is-canvas-hidden" width="900" height="540"></canvas>
@@ -260,8 +266,12 @@
           <div id="viewsStackedSliderWrap" class="chart-slider is-hidden">
             <div class="chart-slider-row">
               <label class="chart-slider-label">Time Window</label>
-              <input type="range" id="first24HoursSlider" min="15" max="21600" value="1440" step="15" class="chart-slider-input" />
-              <span id="first24HoursSliderValue" class="chart-slider-value">24h</span>
+              <div class="chart-slider-track" id="first24HoursSliderTrack">
+                <div class="chart-slider-range" id="first24HoursSliderRange"></div>
+                <input type="range" id="first24HoursSliderMin" min="0" max="21600" value="0" step="1" class="chart-slider-input chart-slider-input--min" />
+                <input type="range" id="first24HoursSliderMax" min="0" max="21600" value="1440" step="1" class="chart-slider-input chart-slider-input--max" />
+              </div>
+              <span id="first24HoursSliderValue" class="chart-slider-value">0m–24h</span>
             </div>
           </div>
         </div>
@@ -269,6 +279,7 @@
       <div class="chart-block">
         <h4 id="viewsPerPersonTitle" class="chart-title">Views Per Person over Time</h4>
         <div class="chart-wrap chart-wrap-spaced">
+          <div class="chart-y-axis-label">Views per Person</div>
           <div class="chart-canvas-stack">
             <canvas id="viewsPerPersonTimeChart" class="chart-canvas" width="900" height="540"></canvas>
             <canvas id="viewsPerPersonChart" class="chart-canvas is-canvas-hidden" width="900" height="540"></canvas>
@@ -278,8 +289,12 @@
           <div id="viewsPerPersonSliderWrap" class="chart-slider is-hidden">
             <div class="chart-slider-row">
               <label class="chart-slider-label">Time Window</label>
-              <input type="range" id="viewsPerPersonSlider" min="15" max="21600" value="1440" step="15" class="chart-slider-input" />
-              <span id="viewsPerPersonSliderValue" class="chart-slider-value">24h</span>
+              <div class="chart-slider-track" id="viewsPerPersonSliderTrack">
+                <div class="chart-slider-range" id="viewsPerPersonSliderRange"></div>
+                <input type="range" id="viewsPerPersonSliderMin" min="0" max="21600" value="0" step="1" class="chart-slider-input chart-slider-input--min" />
+                <input type="range" id="viewsPerPersonSliderMax" min="0" max="21600" value="1440" step="1" class="chart-slider-input chart-slider-input--max" />
+              </div>
+              <span id="viewsPerPersonSliderValue" class="chart-slider-value">0m–24h</span>
             </div>
           </div>
         </div>
@@ -336,21 +351,25 @@
       </div>
       <h4 class="chart-title">Followers over Time</h4>
       <div class="chart-wrap chart-wrap-spaced">
+        <div class="chart-y-axis-label">Followers</div>
         <canvas id="followersChart" width="900" height="540"></canvas>
         <div id="followersTooltip" class="tooltip"></div>
       </div>
       <h4 id="allViewsOverTimeTitle" class="chart-title">Total Views over Time</h4>
       <div class="chart-wrap chart-wrap-spaced">
+        <div class="chart-y-axis-label" data-axis="views">Total Views</div>
         <canvas id="allViewsChart" width="900" height="540"></canvas>
         <div id="allViewsTooltip" class="tooltip"></div>
       </div>
       <h4 class="chart-title">Likes over Time</h4>
       <div class="chart-wrap chart-wrap-spaced">
+        <div class="chart-y-axis-label">Likes</div>
         <canvas id="allLikesChart" width="900" height="540"></canvas>
         <div id="allLikesTooltip" class="tooltip"></div>
       </div>
       <h4 class="chart-title">Cast In over Time</h4>
       <div class="chart-wrap chart-wrap-spaced">
+        <div class="chart-y-axis-label">Cast In</div>
         <canvas id="cameosChart" width="900" height="540"></canvas>
         <div id="cameosTooltip" class="tooltip"></div>
       </div>
