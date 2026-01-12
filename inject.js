@@ -713,7 +713,7 @@
     if (!Number.isFinite(ageMin) || ageMin <= 0) return false;
     const l = Number(likes);
     if (!Number.isFinite(l) || l < 0) return false;
-    return l >= (5 * ageMin) / 6;
+    return l >= 10 && l >= (5 * ageMin) / 6;
   }
 
   // Tooltip (1s delayed, cursor-follow)
