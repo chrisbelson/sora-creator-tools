@@ -696,13 +696,6 @@
     return nearest >= 1440 && diff <= windowMin;
   }
   const greenEmblemColor = () => 'hsla(120, 85%, 32%, 0.92)';
-  const SUPER_HOT_THRESHOLDS = [
-    { minLikes: 50, maxAgeMin: 60 },
-    { minLikes: 100, maxAgeMin: 120 },
-    { minLikes: 150, maxAgeMin: 180 },
-    { minLikes: 200, maxAgeMin: 240 },
-    { minLikes: 250, maxAgeMin: 300 },
-  ];
   const FIRE_THRESHOLDS = [
     { maxHours: 6, flames: '🔥🔥🔥' },
     { maxHours: 12, flames: '🔥🔥' },
@@ -717,13 +710,10 @@
     return '';
   }
   function isSuperHotByRate(likes, ageMin) {
-    if (!Number.isFinite(ageMin)) return false;
+    if (!Number.isFinite(ageMin) || ageMin <= 0) return false;
     const l = Number(likes);
     if (!Number.isFinite(l) || l < 0) return false;
-    for (const rule of SUPER_HOT_THRESHOLDS) {
-      if (ageMin <= rule.maxAgeMin && l >= rule.minLikes) return true;
-    }
-    return false;
+    return l >= (5 * ageMin) / 6;
   }
 
   // Tooltip (1s delayed, cursor-follow)
