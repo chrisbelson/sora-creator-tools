@@ -715,6 +715,12 @@
     if (!Number.isFinite(l) || l < 0) return false;
     return l >= 10 && l >= (5 * ageMin) / 6;
   }
+  function isVeryHotByRate(likes, ageMin) {
+    if (!Number.isFinite(ageMin) || ageMin < 10) return false;
+    const l = Number(likes);
+    if (!Number.isFinite(l) || l < 0) return false;
+    return l >= (4 * ageMin) / 6;
+  }
 
   // Tooltip (1s delayed, cursor-follow)
   let sharedTooltip;
@@ -1361,6 +1367,7 @@
   function badgeStateFor(likes, ageMin) {
     return {
       isSuperHot: isSuperHotByRate(likes, ageMin),
+      isVeryHot: isVeryHotByRate(likes, ageMin),
       isNearDay: isNearWholeDay(ageMin),
       isHot: likes >= 25,
     };
@@ -1372,6 +1379,7 @@
     const likes = idToLikes.get(id) ?? 0;
     const state = badgeStateFor(likes, ageMin);
     if (state.isSuperHot) return colorForAgeMin(0);
+    if (state.isVeryHot) return colorForAgeMin(0);
     if (state.isNearDay) return greenEmblemColor();
     if (state.isHot) return colorForAgeMin(ageMin);
     return null;
@@ -1382,6 +1390,7 @@
     const likes = idToLikes.get(id) ?? 0;
     const state = badgeStateFor(likes, ageMin);
     if (state.isSuperHot) return '🔥🔥🔥🔥🔥';
+    if (state.isVeryHot) return '🔥🔥🔥🔥';
     if (state.isNearDay) return '📝';
     if (state.isHot) return fireForAge(ageMin);
     return '';
@@ -1439,6 +1448,7 @@
     const likes = idToLikes.get(id) ?? 0;
     const ageMin = meta?.ageMin;
     const isSuperHot = isSuperHotByRate(likes, ageMin);
+    const isVeryHot = isVeryHotByRate(likes, ageMin);
 
     const uv = idToUnique.get(id);
     const totalViews = idToViews.get(id);
@@ -1504,6 +1514,8 @@
       el.style.background = pillBg;
       if (isSuperHot) {
         el.style.boxShadow = '0 0 10px 3px hsla(0, 100%, 50%, 0.7)';
+      } else if (isVeryHot) {
+        el.style.boxShadow = '0 0 8px 2px hsla(0, 100%, 50%, 0.5)';
       }
     }
     if (durationStr) {
@@ -2137,6 +2149,7 @@
     const meta = idToMeta.get(sid);
     const ageMin = meta?.ageMin;
     const isSuperHot = isSuperHotByRate(likes ?? 0, ageMin);
+    const isVeryHot = isVeryHotByRate(likes ?? 0, ageMin);
 
     // Match feed badge format exactly
     const viewsStr = uv != null ? `👀 ${fmt(uv)}` : null;
@@ -2224,6 +2237,8 @@
 
       if (isSuperHot) {
         timeEl.style.boxShadow = '0 0 10px 3px hsla(0, 100%, 50%, 0.7)';
+      } else if (isVeryHot) {
+        timeEl.style.boxShadow = '0 0 8px 2px hsla(0, 100%, 50%, 0.5)';
       }
     }
 
