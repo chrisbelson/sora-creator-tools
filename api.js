@@ -330,9 +330,10 @@
 
   const shouldOffer25s = (settings) => {
     if (planIsFree === true) return false;
-    // 25s is not available for Sora 2 Pro when Resolution is High.
-    // Allow when Sora 2 Pro + Standard (or unknown) and for Sora 2.
-    return !(settings?.model === 'sora2pro' && settings?.resolution === 'high');
+    // We allow 25s for all paid plans, including Sora 2 Pro + High (the backend may still reject
+    // unsupported combinations; this controls UI injection + request rewriting only).
+    void settings;
+    return true;
   };
 
   function ensureVideoGensWarning(seconds) {
@@ -480,12 +481,16 @@
           for (let i = 0; i < 10 && n; i++, n = n.parentElement) unhideEl(n);
         }
 
-        const countEls = Array.from(root.querySelectorAll('.font-medium')).filter((el) =>
-          /^\s*\d+\s*$/.test((el.textContent || '').trim())
-        );
+        const countEls = Array.from(root.querySelectorAll('.font-medium'));
         const countEl = countEls[countEls.length - 1];
         if (!countEl) return false;
-        countEl.textContent = desiredCount == null ? '' : String(desiredCount);
+        // If we can't estimate cost (new/unsupported durations), show a placeholder rather than
+        // blanking or leaving a stale value from the last supported selection.
+        if (desiredCount == null) {
+          countEl.textContent = '?';
+          return true;
+        }
+        countEl.textContent = String(desiredCount);
         return true;
       } catch {
         return false;
@@ -528,9 +533,15 @@
     });
   }
 
+  // Extra durations are injected into the Settings -> Duration menu, and enforced by rewriting `n_frames`.
+  // Sora uses 30fps, so `frames = seconds * 30`.
   const EXTRA_DURATIONS = [
     { seconds: 5, frames: 150, label: '5 seconds', shortLabel: '5s' },
+    { seconds: 20, frames: 600, label: '20 seconds', shortLabel: '20s' },
     { seconds: 25, frames: 750, label: '25 seconds', shortLabel: '25s' },
+    { seconds: 30, frames: 900, label: '30 seconds', shortLabel: '30s' },
+    { seconds: 45, frames: 1350, label: '45 seconds', shortLabel: '45s' },
+    { seconds: 60, frames: 1800, label: '60 seconds', shortLabel: '60s' },
   ];
 
   const GENS_COUNT_MIN = 1;
@@ -1469,7 +1480,7 @@
         // Rotation spec:
         // - Take the current 5s rotation and rotate it 8.3% (of a full circle) to the right as the new 5s baseline.
         // - Then rotate proportionally by duration, adding another 8.3% per +5 seconds.
-        const allowed = new Set([5, 10, 15, 25]);
+        const allowed = new Set([5, 10, 15, 20, 25, 30, 45, 60]);
         if (!allowed.has(seconds)) return;
 
         const stepDegPer5s = 360 * 0.083; // 8.3%
@@ -1576,9 +1587,9 @@
       }
     } catch {}
 
-    // Re-order to: 5, 7, 10, 15, 20, 25 (others after).
+    // Re-order to: 5, 10, 15, 20, 25, 30, 45, 60 (others after).
     try {
-      const desired = [allow5 ? 5 : null, 10, 15, allow25 ? 25 : null].filter((n) => n != null);
+      const desired = [allow5 ? 5 : null, 10, 15, 20, allow25 ? 25 : null, 30, 45, 60].filter((n) => n != null);
       const radios = Array.from(group.querySelectorAll('[role="menuitemradio"]'));
       const withMeta = radios.map((el, idx) => {
         const sec = getMenuItemSeconds(el);
