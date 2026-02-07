@@ -536,10 +536,11 @@
   // Duration override is enforced by rewriting `n_frames` on create requests.
   // Sora uses 30fps, so `frames = seconds * 30`.
   const SCT_FPS = 30;
-  const DURATION_FRAMES_MIN = 5 * SCT_FPS;
+  const DURATION_FRAMES_MIN = 0;
   const DURATION_FRAMES_MAX = 60 * SCT_FPS;
   const DURATION_TICK_SECONDS = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
   const DURATION_SNAP_THRESHOLD_FRAMES = 10;
+  const DURATION_SUPPORTED_MIN_FRAMES = 5 * SCT_FPS;
 
   function getSnapFrames(frames, { include24s } = {}) {
     const f = Number(frames);
@@ -587,7 +588,9 @@
 
   function formatSecondsShort(seconds) {
     const s = Number(seconds);
-    if (!Number.isFinite(s) || s <= 0) return '';
+    if (!Number.isFinite(s)) return '';
+    if (s === 0) return '0s';
+    if (s < 0) return '';
     const roundedInt = Math.round(s);
     if (Math.abs(s - roundedInt) < 1e-6) return `${roundedInt}s`;
     const fixed = s.toFixed(2);
@@ -1498,11 +1501,17 @@
         width: 100%;
         border-radius: 10px;
         border: 1px solid rgba(var(--bg-inverse), 0.18);
-        background: transparent;
+        background: rgba(var(--bg-inverse), 0.06);
         padding: 6px 8px;
         font-size: 12px;
         line-height: 16px;
         color: inherit;
+        cursor: text;
+      }
+      [data-sct-duration-slider="1"] input[data-sct-duration-time="1"]:hover,
+      [data-sct-duration-slider="1"] input[data-sct-duration-frames="1"]:hover {
+        border-color: rgba(var(--bg-inverse), 0.28);
+        background: rgba(var(--bg-inverse), 0.08);
       }
       [data-sct-duration-slider="1"] input[data-sct-duration-time="1"]:focus,
       [data-sct-duration-slider="1"] input[data-sct-duration-frames="1"]:focus {
@@ -1563,6 +1572,20 @@
 
     const applyFrames = (frames) => {
       const f = clampInt(frames, DURATION_FRAMES_MIN, DURATION_FRAMES_MAX);
+      if (f === 0) {
+        clearDurationOverride();
+        try {
+          const checked = group.querySelector('[role="menuitemradio"][aria-checked="true"]');
+          const sec = getMenuItemSeconds(checked);
+          if (sec != null) {
+            setDurationMenuValueLabel(`${sec}s`);
+            scheduleVideoGensWarning(sec);
+          } else {
+            setDurationMenuValueLabel('0s');
+          }
+        } catch {}
+        return { frames: 0, seconds: 0 };
+      }
       const seconds = framesToSeconds(f);
       writeDurationOverride({ seconds, frames: f });
       setDurationMenuValueLabel(formatSecondsShort(seconds));
@@ -1668,7 +1691,7 @@
       timeWrap.className = 'flex-1';
       const timeLabel = document.createElement('div');
       timeLabel.className = 'mb-1 text-[11px] font-medium text-token-text-secondary';
-      timeLabel.textContent = 'Time';
+      timeLabel.textContent = 'Time (editable)';
       timeInput = document.createElement('input');
       timeInput.type = 'text';
       timeInput.inputMode = 'decimal';
@@ -1676,6 +1699,7 @@
       timeInput.spellcheck = false;
       timeInput.placeholder = 'e.g. 24.5s or 0:24.5';
       timeInput.dataset.sctDurationTime = '1';
+      timeInput.title = 'Type a time like 24.5s or 0:24.5';
       timeWrap.appendChild(timeLabel);
       timeWrap.appendChild(timeInput);
 
@@ -1683,7 +1707,7 @@
       framesWrap.style.width = '96px';
       const framesLabel = document.createElement('div');
       framesLabel.className = 'mb-1 text-[11px] font-medium text-token-text-secondary';
-      framesLabel.textContent = 'Frames';
+      framesLabel.textContent = 'Frames (editable)';
       framesInput = document.createElement('input');
       framesInput.type = 'text';
       framesInput.inputMode = 'numeric';
@@ -1691,6 +1715,7 @@
       framesInput.spellcheck = false;
       framesInput.placeholder = 'e.g. 750';
       framesInput.dataset.sctDurationFrames = '1';
+      framesInput.title = 'Type an integer number of frames';
       framesWrap.appendChild(framesLabel);
       framesWrap.appendChild(framesInput);
 
@@ -1747,7 +1772,7 @@
           if (currentEl) currentEl.textContent = short;
           if (subtextEl) subtextEl.textContent = `${v} frames`;
 
-          const unsupported = v > supportedFramesNow;
+          const unsupported = v < DURATION_SUPPORTED_MIN_FRAMES || v > supportedFramesNow;
           if (currentEl) currentEl.dataset.unsupported = unsupported ? '1' : '';
           if (subtextEl) subtextEl.dataset.unsupported = unsupported ? '1' : '';
 
@@ -1873,13 +1898,19 @@
       sliderWrap.dataset.sctSupportedMaxFrames = String(supportedMaxFrames);
     } catch {}
 
-    // Track background gradient: supported range normal, unsupported range red.
+    // Track background gradient:
+    // - red for 0-5s
+    // - normal for 5s-(supported max)
+    // - red for > supported max
     try {
       const denom = DURATION_FRAMES_MAX - DURATION_FRAMES_MIN;
-      const boundaryFrames = Math.min(DURATION_FRAMES_MAX, supportedMaxFrames + 1);
-      const pct = denom > 0 ? ((boundaryFrames - DURATION_FRAMES_MIN) / denom) * 100 : 100;
-      const clampedPct = pct < 0 ? 0 : pct > 100 ? 100 : pct;
-      const bg = `linear-gradient(to right, rgba(var(--bg-inverse), 0.18) 0%, rgba(var(--bg-inverse), 0.18) ${clampedPct}%, rgba(239, 68, 68, 0.45) ${clampedPct}%, rgba(239, 68, 68, 0.45) 100%)`;
+      const lowBoundaryFrames = Math.min(DURATION_FRAMES_MAX, DURATION_SUPPORTED_MIN_FRAMES);
+      const highBoundaryFrames = Math.min(DURATION_FRAMES_MAX, supportedMaxFrames + 1);
+      const lowPct = denom > 0 ? ((lowBoundaryFrames - DURATION_FRAMES_MIN) / denom) * 100 : 0;
+      const highPct = denom > 0 ? ((highBoundaryFrames - DURATION_FRAMES_MIN) / denom) * 100 : 100;
+      const a = lowPct < 0 ? 0 : lowPct > 100 ? 100 : lowPct;
+      const b = highPct < 0 ? 0 : highPct > 100 ? 100 : highPct;
+      const bg = `linear-gradient(to right, rgba(239, 68, 68, 0.45) 0%, rgba(239, 68, 68, 0.45) ${a}%, rgba(var(--bg-inverse), 0.18) ${a}%, rgba(var(--bg-inverse), 0.18) ${b}%, rgba(239, 68, 68, 0.45) ${b}%, rgba(239, 68, 68, 0.45) 100%)`;
       if (slider && slider.style) slider.style.setProperty('--sct-duration-track-bg', bg);
     } catch {}
 
@@ -1905,7 +1936,7 @@
       if (slider) slider.value = String(currentFrames);
       if (currentEl) currentEl.textContent = short;
       if (subtextEl) subtextEl.textContent = `${currentFrames} frames`;
-      const unsupported = currentFrames > supportedMaxFrames;
+      const unsupported = currentFrames < DURATION_SUPPORTED_MIN_FRAMES || currentFrames > supportedMaxFrames;
       if (currentEl) currentEl.dataset.unsupported = unsupported ? '1' : '';
       if (subtextEl) subtextEl.dataset.unsupported = unsupported ? '1' : '';
       if (timeInput && document.activeElement !== timeInput) timeInput.value = short;
