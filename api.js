@@ -535,11 +535,10 @@
 
   // Extra durations are injected into the Settings -> Duration menu, and enforced by rewriting `n_frames`.
   // Sora uses 30fps, so `frames = seconds * 30`.
+  // Note: for Sora 2 Pro High, we use 749 frames for "25s" (one frame under 25 seconds) to avoid backend rejection.
   const EXTRA_DURATIONS = [
     { seconds: 5, frames: 150, label: '5 seconds', shortLabel: '5s' },
     { seconds: 20, frames: 600, label: '20 seconds', shortLabel: '20s' },
-    // Sora 2 Pro High sometimes rejects 25s; offer a "just under 25s" option in that mode.
-    { seconds: 24, frames: 720, label: '24 seconds', shortLabel: '24s', proHighOnly: true },
     { seconds: 25, frames: 750, label: '25 seconds', shortLabel: '25s' },
     { seconds: 30, frames: 900, label: '30 seconds', shortLabel: '30s' },
     { seconds: 45, frames: 1350, label: '45 seconds', shortLabel: '45s' },
@@ -1353,12 +1352,31 @@
 
     durationSubmenuEl.dataset.sctDurationMenu = '1';
 
-    const override = getDurationOverride();
-    const isChecked = (d) => override && override.seconds === d.seconds && override.frames === d.frames;
+    let override = getDurationOverride();
     const settings = getSoraSettings();
     const allow25 = shouldOffer25s(settings);
     const allow5 = !isRemixEmptyQuery();
-    const allow24 = planIsFree !== true && settings?.model === 'sora2pro' && settings?.resolution === 'high';
+    const isSora2ProHigh = planIsFree !== true && settings?.model === 'sora2pro' && settings?.resolution === 'high';
+
+    const effectiveFramesFor = (d) => {
+      // "Just under 25s" for Sora 2 Pro High: 750 - 1 = 749 frames at 30fps.
+      if (d && d.seconds === 25 && isSora2ProHigh) return Math.max(1, Number(d.frames) - 1);
+      return Number(d?.frames);
+    };
+
+    // Migrate stale overrides from older builds.
+    try {
+      if (override && override.seconds === 24) {
+        clearDurationOverride();
+        override = null;
+      }
+      if (override && override.seconds === 25 && isSora2ProHigh && override.frames === 750) {
+        writeDurationOverride({ seconds: 25, frames: 749 });
+        override = { seconds: 25, frames: 749 };
+      }
+    } catch {}
+
+    const isChecked = (d) => override && override.seconds === d.seconds && override.frames === effectiveFramesFor(d);
 
     const getMenuItemSeconds = (el) => {
       const label = (el?.querySelector?.('span.truncate')?.textContent || el?.textContent || '').trim();
@@ -1405,36 +1423,6 @@
       // If 25s was selected via override, clear it so we don't keep rewriting API requests.
       try {
         if (override && override.seconds === 25) {
-          clearDurationOverride();
-          // Best-effort: update the parent menu value label to whichever built-in option is selected.
-          const checked = group.querySelector('[role="menuitemradio"][aria-checked="true"]');
-          const sec = getMenuItemSeconds(checked);
-          if (sec != null) {
-            const durationMenuItems = Array.from(document.querySelectorAll('[role="menuitem"][aria-haspopup="menu"]')).filter((mi) =>
-              (mi.textContent || '').includes('Duration')
-            );
-            for (const mi of durationMenuItems) {
-              const valueEl = findDurationMenuValueEl(mi);
-              if (valueEl) valueEl.textContent = `${sec}s`;
-            }
-          }
-        }
-      } catch {}
-    }
-
-    // Remove 24s option when not in Sora 2 Pro High mode.
-    if (!allow24) {
-      try {
-        const radios = Array.from(group.querySelectorAll('[role="menuitemradio"]'));
-        radios.forEach((el) => {
-          const sec = getMenuItemSeconds(el);
-          if (sec === 24) el.remove();
-        });
-      } catch {}
-
-      // If 24s was selected via override, clear it so we don't keep rewriting API requests.
-      try {
-        if (override && override.seconds === 24) {
           clearDurationOverride();
           // Best-effort: update the parent menu value label to whichever built-in option is selected.
           const checked = group.querySelector('[role="menuitemradio"][aria-checked="true"]');
@@ -1506,7 +1494,7 @@
         // Rotation spec:
         // - Take the current 5s rotation and rotate it 8.3% (of a full circle) to the right as the new 5s baseline.
         // - Then rotate proportionally by duration, adding another 8.3% per +5 seconds.
-        const allowed = new Set([5, 10, 15, 20, 24, 25, 30, 45, 60]);
+        const allowed = new Set([5, 10, 15, 20, 25, 30, 45, 60]);
         if (!allowed.has(seconds)) return;
 
         const stepDegPer5s = 360 * 0.083; // 8.3%
@@ -1529,7 +1517,7 @@
     }
 
     function selectDuration(d, el) {
-      writeDurationOverride({ seconds: d.seconds, frames: d.frames });
+      writeDurationOverride({ seconds: d.seconds, frames: effectiveFramesFor(d) });
 
       try {
         const radios = group.querySelectorAll('[role="menuitemradio"]');
@@ -1553,7 +1541,7 @@
     function makeItem(d) {
       const el = template.cloneNode(true);
       el.dataset.sctDurationOption = String(d.seconds);
-      el.dataset.sctFrames = String(d.frames);
+      el.dataset.sctFrames = String(effectiveFramesFor(d));
 
       // Update label text
       const labelSpan = el.querySelector('span.truncate');
@@ -1586,7 +1574,6 @@
 
     for (const d of EXTRA_DURATIONS) {
       if (d.seconds === 5 && !allow5) continue;
-      if (d.proHighOnly && !allow24) continue;
       if (d.seconds === 25 && !allow25) continue;
       if (group.querySelector(`[data-sct-duration-option="${d.seconds}"]`)) {
         // Keep state in sync when the submenu is re-opened/re-rendered.
@@ -1614,9 +1601,9 @@
       }
     } catch {}
 
-    // Re-order to: 5, 10, 15, 20, 24, 25, 30, 45, 60 (others after).
+    // Re-order to: 5, 10, 15, 20, 25, 30, 45, 60 (others after).
     try {
-      const desired = [allow5 ? 5 : null, 10, 15, 20, allow24 ? 24 : null, allow25 ? 25 : null, 30, 45, 60].filter((n) => n != null);
+      const desired = [allow5 ? 5 : null, 10, 15, 20, allow25 ? 25 : null, 30, 45, 60].filter((n) => n != null);
       const radios = Array.from(group.querySelectorAll('[role="menuitemradio"]'));
       const withMeta = radios.map((el, idx) => {
         const sec = getMenuItemSeconds(el);
@@ -1660,14 +1647,18 @@
         let override = getDurationOverride();
         const settings = getSoraSettings();
         const allow25 = shouldOffer25s(settings);
-        const allow24 = planIsFree !== true && settings?.model === 'sora2pro' && settings?.resolution === 'high';
+        const isSora2ProHigh = planIsFree !== true && settings?.model === 'sora2pro' && settings?.resolution === 'high';
+        if (override && override.seconds === 24) {
+          clearDurationOverride();
+          override = null;
+        }
         if (override && override.seconds === 25 && !allow25) {
           clearDurationOverride();
           override = null;
         }
-        if (override && override.seconds === 24 && !allow24) {
-          clearDurationOverride();
-          override = null;
+        if (override && override.seconds === 25 && isSora2ProHigh && override.frames === 750) {
+          writeDurationOverride({ seconds: 25, frames: 749 });
+          override = { seconds: 25, frames: 749 };
         }
 
         if (override) {
@@ -1737,7 +1728,16 @@
           const menu = radio.closest && radio.closest('[data-sct-duration-menu="1"]');
           if (!menu) return;
           if (radio.dataset && radio.dataset.sctDurationOption) return; // our injected items
-          clearDurationOverride();
+
+          const labelText = (radio.querySelector('span.truncate')?.textContent || radio.textContent || '').trim();
+          const m = labelText.match(/(\d+)\s*seconds?/i) || labelText.match(/(\d+)\s*s\b/i);
+          const sec = m ? Number(m[1]) : null;
+          const settings = getSoraSettings();
+          const isSora2ProHigh = planIsFree !== true && settings?.model === 'sora2pro' && settings?.resolution === 'high';
+
+          // Special-case: Sora 2 Pro High rejects 25s sometimes; keep UI at 25s but send 749 frames.
+          if (sec === 25 && isSora2ProHigh) writeDurationOverride({ seconds: 25, frames: 749 });
+          else clearDurationOverride();
 
           // Ensure injected items no longer look selected.
           try {
@@ -1755,19 +1755,14 @@
 
           // Update the Duration label to the selected built-in option immediately.
           try {
-            const labelText = (radio.querySelector('span.truncate')?.textContent || radio.textContent || '').trim();
-            const m = labelText.match(/(\d+)\s*seconds?/i) || labelText.match(/(\d+)\s*s\b/i);
-            if (m) {
-              const sec = Number(m[1]);
-              if (Number.isFinite(sec)) {
-                scheduleVideoGensWarning(sec);
-                const durationMenuItems = Array.from(document.querySelectorAll('[role="menuitem"][aria-haspopup="menu"]')).filter((mi) =>
-                  (mi.textContent || '').includes('Duration')
-                );
-                for (const mi of durationMenuItems) {
-                  const valueEl = findDurationMenuValueEl(mi);
-                  if (valueEl) valueEl.textContent = `${sec}s`;
-                }
+            if (Number.isFinite(sec)) {
+              scheduleVideoGensWarning(sec);
+              const durationMenuItems = Array.from(document.querySelectorAll('[role="menuitem"][aria-haspopup="menu"]')).filter((mi) =>
+                (mi.textContent || '').includes('Duration')
+              );
+              for (const mi of durationMenuItems) {
+                const valueEl = findDurationMenuValueEl(mi);
+                if (valueEl) valueEl.textContent = `${sec}s`;
               }
             }
           } catch {}
