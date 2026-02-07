@@ -538,6 +538,8 @@
   const EXTRA_DURATIONS = [
     { seconds: 5, frames: 150, label: '5 seconds', shortLabel: '5s' },
     { seconds: 20, frames: 600, label: '20 seconds', shortLabel: '20s' },
+    // Sora 2 Pro High sometimes rejects 25s; offer a "just under 25s" option in that mode.
+    { seconds: 24, frames: 720, label: '24 seconds', shortLabel: '24s', proHighOnly: true },
     { seconds: 25, frames: 750, label: '25 seconds', shortLabel: '25s' },
     { seconds: 30, frames: 900, label: '30 seconds', shortLabel: '30s' },
     { seconds: 45, frames: 1350, label: '45 seconds', shortLabel: '45s' },
@@ -1356,6 +1358,7 @@
     const settings = getSoraSettings();
     const allow25 = shouldOffer25s(settings);
     const allow5 = !isRemixEmptyQuery();
+    const allow24 = planIsFree !== true && settings?.model === 'sora2pro' && settings?.resolution === 'high';
 
     const getMenuItemSeconds = (el) => {
       const label = (el?.querySelector?.('span.truncate')?.textContent || el?.textContent || '').trim();
@@ -1402,6 +1405,36 @@
       // If 25s was selected via override, clear it so we don't keep rewriting API requests.
       try {
         if (override && override.seconds === 25) {
+          clearDurationOverride();
+          // Best-effort: update the parent menu value label to whichever built-in option is selected.
+          const checked = group.querySelector('[role="menuitemradio"][aria-checked="true"]');
+          const sec = getMenuItemSeconds(checked);
+          if (sec != null) {
+            const durationMenuItems = Array.from(document.querySelectorAll('[role="menuitem"][aria-haspopup="menu"]')).filter((mi) =>
+              (mi.textContent || '').includes('Duration')
+            );
+            for (const mi of durationMenuItems) {
+              const valueEl = findDurationMenuValueEl(mi);
+              if (valueEl) valueEl.textContent = `${sec}s`;
+            }
+          }
+        }
+      } catch {}
+    }
+
+    // Remove 24s option when not in Sora 2 Pro High mode.
+    if (!allow24) {
+      try {
+        const radios = Array.from(group.querySelectorAll('[role="menuitemradio"]'));
+        radios.forEach((el) => {
+          const sec = getMenuItemSeconds(el);
+          if (sec === 24) el.remove();
+        });
+      } catch {}
+
+      // If 24s was selected via override, clear it so we don't keep rewriting API requests.
+      try {
+        if (override && override.seconds === 24) {
           clearDurationOverride();
           // Best-effort: update the parent menu value label to whichever built-in option is selected.
           const checked = group.querySelector('[role="menuitemradio"][aria-checked="true"]');
@@ -1473,7 +1506,7 @@
         // Rotation spec:
         // - Take the current 5s rotation and rotate it 8.3% (of a full circle) to the right as the new 5s baseline.
         // - Then rotate proportionally by duration, adding another 8.3% per +5 seconds.
-        const allowed = new Set([5, 10, 15, 20, 25, 30, 45, 60]);
+        const allowed = new Set([5, 10, 15, 20, 24, 25, 30, 45, 60]);
         if (!allowed.has(seconds)) return;
 
         const stepDegPer5s = 360 * 0.083; // 8.3%
@@ -1553,6 +1586,7 @@
 
     for (const d of EXTRA_DURATIONS) {
       if (d.seconds === 5 && !allow5) continue;
+      if (d.proHighOnly && !allow24) continue;
       if (d.seconds === 25 && !allow25) continue;
       if (group.querySelector(`[data-sct-duration-option="${d.seconds}"]`)) {
         // Keep state in sync when the submenu is re-opened/re-rendered.
@@ -1580,9 +1614,9 @@
       }
     } catch {}
 
-    // Re-order to: 5, 10, 15, 20, 25, 30, 45, 60 (others after).
+    // Re-order to: 5, 10, 15, 20, 24, 25, 30, 45, 60 (others after).
     try {
-      const desired = [allow5 ? 5 : null, 10, 15, 20, allow25 ? 25 : null, 30, 45, 60].filter((n) => n != null);
+      const desired = [allow5 ? 5 : null, 10, 15, 20, allow24 ? 24 : null, allow25 ? 25 : null, 30, 45, 60].filter((n) => n != null);
       const radios = Array.from(group.querySelectorAll('[role="menuitemradio"]'));
       const withMeta = radios.map((el, idx) => {
         const sec = getMenuItemSeconds(el);
@@ -1625,7 +1659,13 @@
 
         let override = getDurationOverride();
         const settings = getSoraSettings();
-        if (override && override.seconds === 25 && !shouldOffer25s(settings)) {
+        const allow25 = shouldOffer25s(settings);
+        const allow24 = planIsFree !== true && settings?.model === 'sora2pro' && settings?.resolution === 'high';
+        if (override && override.seconds === 25 && !allow25) {
+          clearDurationOverride();
+          override = null;
+        }
+        if (override && override.seconds === 24 && !allow24) {
           clearDurationOverride();
           override = null;
         }
