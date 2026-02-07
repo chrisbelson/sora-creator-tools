@@ -1,5 +1,5 @@
 {
-  "manifest_version": 3,
+  "manifest_version": 2,
   "name": "Sora Creator Tools - Video Stats & Analytics",
   "version": "1.1.14",
   "description": "Powerful overlays for video view stats, Dashboard mode for deeper insights, Analysis mode for Top feed analysis, and more!",
@@ -8,19 +8,17 @@
     "48": "icons/48.png",
     "128": "icons/128.png"
   },
-  "action": {
+  "browser_action": {
     "default_icon": {
       "16": "icons/16.png",
       "48": "icons/48.png",
       "128": "icons/128.png"
     }
   },
-  "web_accessible_resources": [
-    {
-      "resources": ["api.js", "inject.js", "dashboard.html"],
-      "matches": ["https://sora.chatgpt.com/*", "https://sora.com/*"]
-    }
-  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "web_accessible_resources": ["api.js", "inject.js"],
   "content_scripts": [
     {
       "matches": ["https://sora.chatgpt.com/*", "https://sora.com/*"],
@@ -28,8 +26,12 @@
       "run_at": "document_start"
     }
   ],
-  "host_permissions": ["https://sora.chatgpt.com/*", "https://sora.com/*"],
-  "permissions": ["storage", "unlimitedStorage"],
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "https://sora.chatgpt.com/*",
+    "https://sora.com/*"
+  ],
   "browser_specific_settings": {
     "gecko": {
       "id": "sora-creator-tools@fancyson.ai",
@@ -37,8 +39,6 @@
         "required": ["none"]
       }
     }
-  },
-  "background": {
-    "service_worker": "background.js"
   }
 }
+
