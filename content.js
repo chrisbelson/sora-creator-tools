@@ -64,7 +64,11 @@
   // Always inject api.js (request/body rewriter + duration dropdown enhancer).
   // Inject inject.js on all pages; it self-limits on draft detail routes.
   injectPageScript('api.js', () => {
-    injectPageScript('inject.js');
+    injectPageScript('uv-drafts-logic.js', () => {
+      injectPageScript('uv-drafts-page.js', () => {
+        injectPageScript('inject.js');
+      });
+    });
   });
 
   // Listen for dashboard open requests from inject.js and relay to background.
