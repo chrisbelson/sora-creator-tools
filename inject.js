@@ -57,6 +57,7 @@
   const MIN_PER_H = 60;
   const MIN_PER_D = 1440;
   const MIN_PER_Y = 525600;
+  const HOT_FLAME_MAX_AGE_MIN = 24 * MIN_PER_H; // 4/5 flames only apply within first 24h
 
   // Debug toggle for characters
   DEBUG.characters = false;
@@ -95,6 +96,114 @@
   const DRAFT_BUTTON_MARGIN = 6; // px from edge
   const DRAFT_BUTTON_SPACING = 4; // px between buttons
   const SORA_DEFAULT_FPS = 30; // Sora standard framerate (fallback if API doesn't provide fps)
+
+  // == UV Drafts Page Constants ==
+  let capturedAuthToken = null; // Captured from intercepted fetch requests
+  let modelOverride = null; // Custom model override for create requests
+  let uvDraftsPage = null;
+  const UV_DRAFTS_DOC_TITLE = 'My Drafts - Sora';
+  let uvDraftsPrevDocTitle = null;
+  let uvDraftsTitleGuardTimer = null;
+  const UV_DRAFTS_TITLE_GUARD_MS = 1000;
+
+  function ensureUVDraftsPageModule() {
+    if (uvDraftsPage) return uvDraftsPage;
+    const factory = window.SoraUVDraftsPageModule;
+    if (typeof factory !== 'function') return null;
+    uvDraftsPage = factory({ defaultFps: SORA_DEFAULT_FPS });
+    try {
+      uvDraftsPage.setCapturedAuthToken?.(capturedAuthToken);
+      uvDraftsPage.setModelOverride?.(modelOverride);
+    } catch {}
+    return uvDraftsPage;
+  }
+
+  function setCurrentModelOverride(value) {
+    modelOverride = typeof value === 'string' && value ? value : null;
+    try {
+      ensureUVDraftsPageModule()?.setModelOverride?.(modelOverride);
+    } catch {}
+  }
+
+  function getActiveModelOverride() {
+    try {
+      return ensureUVDraftsPageModule()?.getModelOverride?.() || modelOverride;
+    } catch {
+      return modelOverride;
+    }
+  }
+
+  function ensureUVDraftsPage() {
+    return ensureUVDraftsPageModule()?.ensureUVDraftsPage?.() || null;
+  }
+
+  function hideUVDraftsPage() {
+    ensureUVDraftsPageModule()?.hideUVDraftsPage?.();
+  }
+
+  function startScheduledPostsTimer() {
+    ensureUVDraftsPageModule()?.startScheduledPostsTimer?.();
+  }
+
+  function setUVDraftsDocumentTitle() {
+    try {
+      const currentTitle = typeof document.title === 'string' ? document.title : '';
+      if (uvDraftsPrevDocTitle == null && currentTitle !== UV_DRAFTS_DOC_TITLE) {
+        uvDraftsPrevDocTitle = currentTitle;
+      }
+      if (currentTitle !== UV_DRAFTS_DOC_TITLE) {
+        document.title = UV_DRAFTS_DOC_TITLE;
+      }
+    } catch {}
+  }
+
+  function startUVDraftsTitleGuard() {
+    setUVDraftsDocumentTitle();
+    if (uvDraftsTitleGuardTimer) return;
+    uvDraftsTitleGuardTimer = setInterval(() => {
+      if (!isUVDrafts()) return;
+      setUVDraftsDocumentTitle();
+    }, UV_DRAFTS_TITLE_GUARD_MS);
+  }
+
+  function stopUVDraftsTitleGuard() {
+    if (uvDraftsTitleGuardTimer) {
+      clearInterval(uvDraftsTitleGuardTimer);
+      uvDraftsTitleGuardTimer = null;
+    }
+  }
+
+  function restoreDocumentTitleAfterUVDrafts() {
+    try {
+      stopUVDraftsTitleGuard();
+      if (uvDraftsPrevDocTitle != null) {
+        if (document.title !== uvDraftsPrevDocTitle) {
+          document.title = uvDraftsPrevDocTitle;
+        }
+      }
+    } catch {}
+    uvDraftsPrevDocTitle = null;
+  }
+
+  function checkPendingComposePrompt() {
+    ensureUVDraftsPageModule()?.checkPendingComposePrompt?.();
+  }
+
+  function loadPendingCreateOverrides() {
+    return ensureUVDraftsPageModule()?.loadPendingCreateOverrides?.() || null;
+  }
+
+  function clearPendingCreateOverrides() {
+    ensureUVDraftsPageModule()?.clearPendingCreateOverrides?.();
+  }
+
+  function applyComposerOverridesToCreateBody(bodyString, overrides) {
+    const moduleApi = ensureUVDraftsPageModule();
+    if (moduleApi?.applyComposerOverridesToCreateBody) {
+      return moduleApi.applyComposerOverridesToCreateBody(bodyString, overrides);
+    }
+    return bodyString;
+  }
 
   // == UI State ==
   let controlBar = null;
@@ -258,6 +367,7 @@
   const isProfile = () => location.pathname.startsWith('/profile');
   const isPost = () => /^\/p\/s_[A-Za-z0-9]+/i.test(location.pathname);
   const isDraftDetail = () => location.pathname === '/d' || location.pathname.startsWith('/d/');
+  const isUVDrafts = () => location.pathname === '/uv-drafts' || location.pathname.startsWith('/uv-drafts');
 
   const isTopFeed = () => {
     try {
@@ -710,13 +820,13 @@
     return '';
   }
   function isSuperHotByRate(likes, ageMin) {
-    if (!Number.isFinite(ageMin) || ageMin <= 0) return false;
+    if (!Number.isFinite(ageMin) || ageMin <= 0 || ageMin >= HOT_FLAME_MAX_AGE_MIN) return false;
     const l = Number(likes);
     if (!Number.isFinite(l) || l < 0) return false;
     return l >= 10 && l >= (5 * ageMin) / 6;
   }
   function isVeryHotByRate(likes, ageMin) {
-    if (!Number.isFinite(ageMin) || ageMin < 10) return false;
+    if (!Number.isFinite(ageMin) || ageMin < 10 || ageMin >= HOT_FLAME_MAX_AGE_MIN) return false;
     const l = Number(likes);
     if (!Number.isFinite(l) || l < 0) return false;
     return l >= (4 * ageMin) / 6;
@@ -3940,6 +4050,7 @@
     return ov;
   }
 
+
   function updateAnalyzeHeaderSortIndicators() {
     const table = analyzeTableEl;
     if (!table || !table.tHead) return;
@@ -4999,7 +5110,66 @@ async function renderAnalyzeTable(force = false) {
     };
     const origFetch = window.fetch;
     window.fetch = async function (input, init) {
-      const res = await origFetch.apply(this, arguments);
+      // Capture Authorization header from outgoing requests for UV Drafts API
+      try {
+        let headers = init?.headers;
+
+        // Also check if input is a Request object with headers
+        if (!headers && input instanceof Request) {
+          headers = input.headers;
+        }
+
+        if (headers) {
+          let authHeader = null;
+          if (headers instanceof Headers) {
+            authHeader = headers.get('Authorization');
+          } else if (Array.isArray(headers)) {
+            const entry = headers.find(h => h[0]?.toLowerCase() === 'authorization');
+            if (entry) authHeader = entry[1];
+          } else if (typeof headers === 'object') {
+            authHeader = headers['Authorization'] || headers['authorization'];
+          }
+          if (authHeader && authHeader.startsWith('Bearer ')) {
+            capturedAuthToken = authHeader;
+            ensureUVDraftsPageModule()?.setCapturedAuthToken?.(capturedAuthToken);
+          }
+        }
+      } catch {}
+
+      // Intercept /backend/nf/create to inject composer overrides + model override
+      let modifiedInit = init;
+      try {
+        const url = typeof input === 'string' ? input : input?.url || '';
+        if (NF_CREATE_RE.test(url) && init?.body) {
+          let body = init.body;
+          if (typeof body === 'string') {
+            try {
+              let nextBody = body;
+              const pendingOverrides = loadPendingCreateOverrides();
+              if (pendingOverrides) {
+                nextBody = applyComposerOverridesToCreateBody(nextBody, pendingOverrides);
+              }
+
+              const activeModelOverride = getActiveModelOverride();
+              if (activeModelOverride) {
+                const parsed = JSON.parse(nextBody);
+                parsed.model = activeModelOverride;
+                nextBody = JSON.stringify(parsed);
+              }
+
+              if (nextBody !== body) {
+                modifiedInit = { ...init, body: nextBody };
+              }
+
+              if (pendingOverrides) {
+                clearPendingCreateOverrides();
+              }
+            } catch {}
+          }
+        }
+      } catch {}
+
+      const res = await origFetch.call(this, input, modifiedInit);
       try {
         if (isDraftDetail()) return res;
         const url = typeof input === 'string' ? input : input?.url || '';
@@ -6504,6 +6674,35 @@ async function renderAnalyzeTable(force = false) {
 
   let observersActive = false;
 
+  // == Duration Selector Unlocker ==
+  function startMenuObserver() {
+    // Observer for when dropdown menus appear
+    const menuObserver = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (!(node instanceof HTMLElement)) continue;
+
+          const menuContent = node.matches?.('[data-radix-menu-content]')
+            ? node
+            : node.querySelector?.('[data-radix-menu-content]');
+
+          if (menuContent) {
+            // Check if this is the duration selector (contains "seconds" options) and enable disabled items
+            const hasDurationOptions = menuContent.textContent?.includes('seconds');
+            if (hasDurationOptions) {
+              menuContent.querySelectorAll('[role="menuitemradio"][aria-disabled="true"]').forEach((item) => {
+                item.removeAttribute('aria-disabled');
+                item.removeAttribute('data-disabled');
+              });
+            }
+          }
+        }
+      }
+    });
+
+    menuObserver.observe(document.body, { childList: true, subtree: true });
+  }
+
   function startObservers() {
     if (observersActive) return;
     observersActive = true;
@@ -6715,6 +6914,37 @@ async function renderAnalyzeTable(force = false) {
     const navigated = rk !== prev;
     lastRouteKey = rk;
 
+    // Handle UV Drafts page
+    if (isUVDrafts()) {
+      // Hide other overlays
+      try {
+        if (analyzeOverlayEl) analyzeOverlayEl.style.display = 'none';
+      } catch {}
+
+      // Stop gathering if active
+      try {
+        isGatheringActiveThisTab = false;
+        stopGathering(false);
+      } catch {}
+
+      // Hide control bar on UV Drafts
+      teardownControlBar();
+
+      // Show UV Drafts page
+      ensureUVDraftsPage();
+      // /uv-drafts is an extension virtual route; keep tab title from falling back to 404.
+      startUVDraftsTitleGuard();
+      return;
+    } else {
+      // Hide UV Drafts page if we're not on that route
+      hideUVDraftsPage();
+      restoreDocumentTitleAfterUVDrafts();
+    }
+
+    if (isDrafts() || String(location.search || '').includes('remix')) {
+      checkPendingComposePrompt();
+    }
+
     if (isDraftDetail()) {
       // /d/... draft detail pages are extremely sensitive; avoid all injected work here.
       try {
@@ -6842,6 +7072,13 @@ async function renderAnalyzeTable(force = false) {
     }
     setBookmarks(bookmarks);
     return bookmarks.has(draftId);
+  }
+  function removeBookmark(draftId) {
+    const bookmarks = getBookmarks();
+    if (!bookmarks.has(draftId)) return false;
+    bookmarks.delete(draftId);
+    setBookmarks(bookmarks);
+    return true;
   }
   function isBookmarked(draftId) {
     return getBookmarks().has(draftId);
@@ -6986,11 +7223,85 @@ async function renderAnalyzeTable(force = false) {
       clearTimeout(dashboardInjectRetryId);
       dashboardInjectRetryId = null;
     }
-    
+
     try {
       dlog('feed', 'Dashboard button injected into left sidebar');
     } catch {}
+
+    // Also inject UV Drafts button
+    injectUVDraftsButton();
   }
+
+  // Inject UV Drafts button into sidebar
+  let uvDraftsBtnEl = null;
+
+  function injectUVDraftsButton() {
+    // Check if already exists
+    if (uvDraftsBtnEl && document.contains(uvDraftsBtnEl)) return;
+    const existing = document.querySelector('.sora-uv-drafts-btn');
+    if (existing) {
+      uvDraftsBtnEl = existing;
+      return;
+    }
+
+    // Find dashboard button to insert after
+    const dashboardBtn = document.querySelector('.sora-uv-dashboard-btn');
+    if (!dashboardBtn) return;
+
+    // Create UV Drafts button
+    const uvDraftsBtn = document.createElement('button');
+    uvDraftsBtn.className = 'sora-uv-drafts-btn p-3.5 group data-[state=open]:opacity-100 opacity-50 hover:opacity-100 focus-visible:opacity-100';
+    uvDraftsBtn.setAttribute('aria-label', 'UV Drafts');
+    uvDraftsBtn.setAttribute('type', 'button');
+    uvDraftsBtn.style.padding = '13px';
+
+    // Grid/folder icon
+    const iconSpanInline = document.createElement('span');
+    iconSpanInline.className = 'inline group-hover:hidden group-focus-visible:hidden';
+    iconSpanInline.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24" fill="none" class="h-6 w-6">
+      <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+      <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+      <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+      <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+    </svg>`;
+
+    const iconSpanHover = document.createElement('span');
+    iconSpanHover.className = 'hidden group-hover:inline group-focus-visible:inline';
+    iconSpanHover.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24" fill="none" class="h-6 w-6">
+      <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2.5"/>
+      <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2.5"/>
+      <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2.5"/>
+      <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2.5"/>
+    </svg>`;
+
+    const srOnly = document.createElement('div');
+    srOnly.className = 'sr-only';
+    srOnly.textContent = 'UV Drafts';
+
+    uvDraftsBtn.appendChild(iconSpanInline);
+    uvDraftsBtn.appendChild(iconSpanHover);
+    uvDraftsBtn.appendChild(srOnly);
+
+    // Insert after dashboard button
+    dashboardBtn.parentNode.insertBefore(uvDraftsBtn, dashboardBtn.nextSibling);
+    uvDraftsBtnEl = uvDraftsBtn;
+  }
+
+  // Global click delegation for UV Drafts button
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.sora-uv-drafts-btn');
+    if (!btn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Navigate to UV Drafts page
+    if (uvDraftsPrevDocTitle == null && typeof document.title === 'string' && document.title.trim()) {
+      uvDraftsPrevDocTitle = document.title;
+    }
+    history.pushState({}, '', '/uv-drafts');
+    onRouteChange();
+  }, true);
 
   // Global click delegation for the dashboard button
   // This is more robust than attaching a listener to the element, which might be cloned or replaced by React
@@ -7072,14 +7383,17 @@ async function renderAnalyzeTable(force = false) {
     loadTaskToSourceDraft(); // Load task->draft mappings from localStorage
     installFetchSniffer();
     startObservers();
+    startMenuObserver();
     onRouteChange();
     window.addEventListener('storage', handleStorageChange);
+    startScheduledPostsTimer(); // Start background timer for scheduled posts
 
     // Inject dashboard button into left sidebar
     scheduleInjectDashboardButton();
 
     // Check for pending redo prompt (from remix navigation)
     checkPendingRedoPrompt();
+    checkPendingComposePrompt();
 
     // If this tab had Gather running pre-refresh, resume it AND start a fresh timer.
     const s = getGatherState() || {};

@@ -5370,8 +5370,8 @@ function makeTimeChart(canvas, tooltipSelector = '#viewsTooltip', yAxisLabel = '
         const timestampISO = getCol('Timestamp (ISO)') || getCol('Timestamp');
         const timestamp = parseTimestamp(timestampISO);
         if (!timestamp) continue;
-        
-        const count = getCol('Cast in Count');
+
+        const count = getCol('Cast in Count') || getCol('Cast Count');
         if (count === '') continue;
         
         const existingEntry = user.cameos.find(c => c.t === timestamp);
